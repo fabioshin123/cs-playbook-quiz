@@ -3,84 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CS 마스터 인증 테스트</title>
+    <title>CS 플레이북 인지 테스트</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .option-btn:hover { background-color: #f8fafc; border-color: #3b82f6; transform: translateY(-2px); }
-        .option-btn { transition: all 0.2s; }
+        /* 라디오 버튼 커스텀 스타일 */
+        input[type="radio"]:checked + div {
+            border-color: #ec4899; /* 핑크색 테두리 */
+            background-color: #fdf2f8;
+        }
+        input[type="radio"]:checked + div .circle {
+            border-color: #ec4899;
+            background-color: #ec4899;
+            box-shadow: inset 0 0 0 3px white;
+        }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
 
-    <div id="quiz-card" class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
-        <div class="h-2 bg-slate-200">
-            <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+    <div id="quiz-app" class="bg-white w-full max-w-xl rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+        
+        <div id="setup-view" class="p-8">
+            <div class="text-center mb-8">
+                <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold">🎯 통합 자가 진단</span>
+                <h1 class="text-3xl font-bold mt-4">CS 역량 자가 진단</h1>
+                <p class="text-slate-500 mt-2">총 10문제가 출제됩니다. (100점 만점 통과)</p>
+            </div>
+
+            <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-6 mb-8">
+                <label class="block text-pink-600 font-bold mb-2 text-sm">그립 닉네임 (셀러명)</label>
+                <input type="text" id="user-nickname" placeholder="예: 맛있는과일가게" 
+                       class="w-full p-4 rounded-xl border-2 border-white focus:border-pink-400 outline-none transition-all text-lg">
+            </div>
+
+            <button onclick="startQuiz()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold text-lg hover:bg-slate-700 transition">진단 시작하기</button>
         </div>
 
-        <div class="p-8">
-            <div id="setup-view" class="text-center">
-                <div class="text-6xl mb-4">🏆</div>
-                <h1 class="text-2xl font-bold text-slate-800 mb-2">CS 플레이북 인증 테스트</h1>
-                <p class="text-slate-500 mb-8">14개 핵심 문항 중 10문제가 랜덤 출제됩니다.<br><b>100점</b>을 맞아야 인증 딱지가 발급됩니다!</p>
-                <button onclick="startQuiz()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-200">테스트 시작하기</button>
+        <div id="quiz-view" class="hidden p-8">
+            <div class="flex justify-between items-center mb-6">
+                <span id="current-category" class="text-pink-600 font-bold text-sm">카테고리</span>
+                <span id="q-number" class="text-slate-400 text-sm font-medium">Q1 / 10</span>
             </div>
-
-            <div id="quiz-view" class="hidden">
-                <div id="category" class="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-bold mb-4">배송문의</div>
-                
-                <div id="image-container" class="mb-6 rounded-2xl overflow-hidden border border-slate-100 hidden">
-                    <img id="scenario-image" src="" alt="상황 이미지" class="w-full h-48 object-cover">
+            
+            <h2 id="question-text" class="text-xl font-bold text-slate-800 mb-8 leading-snug">질문 내용이 여기에 표시됩니다.</h2>
+            
+            <div id="options-container" class="space-y-4">
                 </div>
 
-                <h2 id="question" class="text-xl font-bold text-slate-800 mb-6 leading-snug"></h2>
-                <div id="options" class="space-y-3"></div>
-            </div>
+            <button id="next-btn" onclick="nextQuestion()" disabled
+                    class="w-full mt-8 bg-pink-500 text-white py-4 rounded-2xl font-bold text-lg opacity-50 cursor-not-allowed transition hover:bg-pink-600">다음 문제</button>
+        </div>
 
-            <div id="result-view" class="hidden text-center">
-                <div id="badge-area" class="mb-6">
-                    <div id="master-badge" class="hidden">
-                        <div class="text-7xl mb-4">🎖️</div>
-                        <h2 class="text-3xl font-extrabold text-blue-600 mb-2">CS MASTER 인증</h2>
-                    </div>
-                    <div id="fail-badge" class="hidden">
-                        <div class="text-7xl mb-4">🧐</div>
-                        <h2 class="text-2xl font-bold text-slate-800 mb-2">조금 더 복습해볼까요?</h2>
-                    </div>
-                </div>
-                <p id="score-text" class="text-slate-600 mb-8 font-medium"></p>
-                <button onclick="location.reload()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold hover:bg-slate-900 transition">다시 도전하기</button>
+        <div id="result-view" class="hidden p-10 text-center">
+            <div id="master-badge" class="hidden">
+                <div class="text-7xl mb-4">🎖️</div>
+                <h2 class="text-3xl font-extrabold text-slate-800 mb-2"><span id="res-nickname"></span>님,</h2>
+                <h2 class="text-2xl font-bold text-pink-600 mb-6">CS MASTER 인증 성공!</h2>
             </div>
+            <div id="fail-badge" class="hidden">
+                <div class="text-7xl mb-4">🧐</div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-6 text-center">아쉽습니다!<br>플레이북을 더 복습해볼까요?</h2>
+            </div>
+            <button onclick="location.reload()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold hover:bg-slate-700 transition">처음으로 돌아가기</button>
         </div>
     </div>
 
     <script>
-        // 이 부분이 바로 질문하신 JSON 데이터를 넣는 곳입니다!
         const quizData = [
-            { 
-                category: "주문문의",
-                img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80",
-                q: "고객이 '주문이 된 건지 모르겠어요'라며 확인을 요청할 때 가장 적절한 답변은?", 
-                a: ["주문번호 알려주세요.", "네, 정상적으로 잘 들어왔어요! 인기 상품 잘 고르셨네요 👍", "마이페이지 가서 직접 확인해 보세요.", "전산 확인 중이니 기다려주세요."], 
-                c: 1,
-                exp: "닉네임을 부르고 상품 선택을 칭찬하여 확신을 주는 것이 포인트입니다."
-            },
-            { 
-                category: "배송문의",
-                img: "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?auto=format&fit=crop&w=800&q=80",
-                q: "전산상 주문 내역이 확인되지 않을 때 안내해야 할 경로는?", 
-                a: ["이메일 수신함", "공지사항", "마이페이지 > 주문, 결제 내역", "은행 이체 내역"], 
-                c: 2,
-                exp: "고객이 직접 확인 가능한 정확한 경로를 안내해야 합니다."
-            },
-            // ... 나머지 12개 문제를 여기에 추가하세요!
+            { cat: "주문문의", q: "고객이 '주문이 된 건지 모르겠어요'라고 문의할 때 가장 적절한 답변은?", a: ["주문번호 알려주세요.", "OOO님! 주문 내역 확인해 봤어요. 인기 상품 잘 골라주셨네요! 👍", "마이페이지 확인해 보세요.", "전산 확인 중입니다."], c: 1 },
+            { cat: "정책위반", q: "유명 연예인의 사진을 퍼와서 'OOO 착용 동일 모델'로 홍보해도 되나요?", a: ["홍보용으로 흔히 쓰므로 괜찮다.", "퍼블리시티권(초상권) 및 저작권 침해다."], c: 1 },
+            // 나머지 문제를 여기에 추가하세요 (총 14개 중 랜덤 추출 예정)
         ];
 
+        let nickname = "";
         let currentIdx = 0;
         let score = 0;
         let selectedQuestions = [];
+        let currentChoice = null;
 
         function startQuiz() {
-            // 14개 중 10개 랜덤 추출
+            nickname = document.getElementById('user-nickname').value.trim();
+            if (!nickname) { alert("닉네임을 입력해 주세요!"); return; }
+
             selectedQuestions = quizData.sort(() => Math.random() - 0.5).slice(0, 10);
             document.getElementById('setup-view').classList.add('hidden');
             document.getElementById('quiz-view').classList.remove('hidden');
@@ -88,36 +91,42 @@
         }
 
         function showQuestion() {
+            currentChoice = null;
+            const btn = document.getElementById('next-btn');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
             const data = selectedQuestions[currentIdx];
-            
-            // 프로그레스 바 및 텍스트 업데이트
-            document.getElementById('progress-bar').style.width = `${(currentIdx / selectedQuestions.length) * 100}%`;
-            document.getElementById('category').innerText = data.category;
-            document.getElementById('question').innerText = data.q;
+            document.getElementById('current-category').innerText = data.cat;
+            document.getElementById('q-number').innerText = `Q${currentIdx + 1} / ${selectedQuestions.length}`;
+            document.getElementById('question-text').innerText = data.q;
 
-            // 이미지 처리
-            const imgContainer = document.getElementById('image-container');
-            const scenarioImg = document.getElementById('scenario-image');
-            if (data.img) {
-                scenarioImg.src = data.img;
-                imgContainer.classList.remove('hidden');
-            } else {
-                imgContainer.classList.add('hidden');
-            }
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
 
-            const optionsDiv = document.getElementById('options');
-            optionsDiv.innerHTML = '';
             data.a.forEach((opt, i) => {
-                const btn = document.createElement('button');
-                btn.className = "option-btn w-full text-left p-4 border-2 border-slate-100 rounded-2xl font-medium text-slate-700";
-                btn.innerText = opt;
-                btn.onclick = () => checkAnswer(i);
-                optionsDiv.appendChild(btn);
+                const label = document.createElement('label');
+                label.className = "block cursor-pointer group";
+                label.innerHTML = `
+                    <input type="radio" name="quiz-opt" class="hidden" onclick="selectOption(${i})">
+                    <div class="flex items-center p-5 border-2 border-slate-100 rounded-2xl group-hover:border-pink-200 group-hover:bg-pink-50 transition-all duration-200">
+                        <div class="circle w-6 h-6 border-2 border-slate-200 rounded-full mr-4 flex-shrink-0 transition-all"></div>
+                        <span class="text-slate-700 font-medium">${opt}</span>
+                    </div>
+                `;
+                container.appendChild(label);
             });
         }
 
-        function checkAnswer(i) {
-            if (i === selectedQuestions[currentIdx].c) score++;
+        function selectOption(i) {
+            currentChoice = i;
+            const btn = document.getElementById('next-btn');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function nextQuestion() {
+            if (currentChoice === selectedQuestions[currentIdx].c) score++;
             
             currentIdx++;
             if (currentIdx < selectedQuestions.length) {
@@ -130,12 +139,9 @@
         function showResult() {
             document.getElementById('quiz-view').classList.add('hidden');
             document.getElementById('result-view').classList.remove('hidden');
-            document.getElementById('progress-bar').style.width = `100%`;
+            document.getElementById('res-nickname').innerText = nickname;
 
-            const scorePercent = (score / selectedQuestions.length) * 100;
-            document.getElementById('score-text').innerText = `총 10문제 중 ${score}문제를 맞히셨습니다.`;
-
-            if (scorePercent === 100) {
+            if (score === selectedQuestions.length) {
                 document.getElementById('master-badge').classList.remove('hidden');
             } else {
                 document.getElementById('fail-badge').classList.remove('hidden');
