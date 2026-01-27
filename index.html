@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS 플레이북 마스터 퀴즈</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .option-btn:hover { background-color: #ebf4ff; border-color: #3b82f6; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+    <div id="quiz-card" class="bg-white w-full max-w-md rounded-2xl shadow-xl p-8">
+        <div id="setup-view">
+            <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">CS 플레이북 퀴즈 ✍️</h1>
+            <p class="text-slate-600 text-center mb-8">주문 문의 대응 플레이북을 얼마나 잘 숙지했는지 테스트해보세요!</p>
+            <button onclick="startQuiz()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition">퀴즈 시작하기</button>
+        </div>
+
+        <div id="quiz-view" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <span id="progress" class="text-sm font-bold text-blue-600"></span>
+            </div>
+            <h2 id="question" class="text-xl font-bold text-slate-800 mb-6"></h2>
+            <div id="options" class="space-y-3"></div>
+        </div>
+
+        <div id="result-view" class="hidden text-center">
+            <div class="text-5xl mb-4">🎉</div>
+            <h2 class="text-2xl font-bold mb-2 text-slate-800">테스트 종료!</h2>
+            <p id="score-text" class="text-slate-600 mb-8"></p>
+            <button onclick="location.reload()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold hover:bg-slate-900 transition">다시 하기</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { q: "고객이 '결제는 했는데 주문 내역이 안 떠요'라고 할 때, 적절하지 않은 태도는?", a: ["상담 종료 후 나중에 확인하라고 한다", "주문 내역을 상세히 조회해 준다", "판매자가 챙기고 있다고 안심시킨다", "마이페이지 확인 경로를 안내한다"], c: 0 },
+            { q: "단골 전환을 위해 고객을 부르는 가장 좋은 호칭은?", a: ["고객님", "구매자님", "방송 닉네임", "선생님"], c: 2 },
+            { q: "구매 취소를 방어하기 위해 사용하는 기법은?", a: ["재구매 할인 제안", "선택 칭찬하기", "사은품 약속", "빠른 배송 강조"], c: 1 }
+        ];
+
+        let currentIdx = 0;
+        let score = 0;
+
+        function startQuiz() {
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const data = quizData[currentIdx];
+            document.getElementById('progress').innerText = `${currentIdx + 1} / ${quizData.length}`;
+            document.getElementById('question').innerText = data.q;
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+            data.a.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full text-left p-4 border-2 border-slate-100 rounded-xl transition duration-200";
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(i);
+                optionsDiv.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(i) {
+            if (i === quizData[currentIdx].c) score++;
+            currentIdx++;
+            if (currentIdx < quizData.length) showQuestion();
+            else showResult();
+        }
+
+        function showResult() {
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+            document.getElementById('score-text').innerText = `${quizData.length}문제 중 ${score}문제를 맞히셨습니다!`;
+        }
+    </script>
+</body>
+</html>
