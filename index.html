@@ -3,61 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CS 플레이북 마스터 퀴즈</title>
+    <title>CS 마스터 인증 테스트</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .option-btn:hover { background-color: #ebf4ff; border-color: #3b82f6; }
+        .option-btn:hover { background-color: #f8fafc; border-color: #3b82f6; transform: translateY(-2px); }
+        .option-btn { transition: all 0.2s; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
-    <div id="quiz-card" class="bg-white w-full max-w-md rounded-2xl shadow-xl p-8">
-        <div id="setup-view">
-            <h1 class="text-2xl font-bold text-center text-slate-800 mb-6">CS 플레이북 퀴즈 ✍️</h1>
-            <p class="text-slate-600 text-center mb-8">주문 문의 대응 플레이북을 얼마나 잘 숙지했는지 테스트해보세요!</p>
-            <button onclick="startQuiz()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition">퀴즈 시작하기</button>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div id="quiz-card" class="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden">
+        <div class="h-2 bg-slate-200">
+            <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
         </div>
 
-        <div id="quiz-view" class="hidden">
-            <div class="flex justify-between items-center mb-4">
-                <span id="progress" class="text-sm font-bold text-blue-600"></span>
+        <div class="p-8">
+            <div id="setup-view" class="text-center">
+                <div class="text-6xl mb-4">🏆</div>
+                <h1 class="text-2xl font-bold text-slate-800 mb-2">CS 플레이북 인증 테스트</h1>
+                <p class="text-slate-500 mb-8">14개 핵심 문항 중 10문제가 랜덤 출제됩니다.<br><b>100점</b>을 맞아야 인증 딱지가 발급됩니다!</p>
+                <button onclick="startQuiz()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-200">테스트 시작하기</button>
             </div>
-            <h2 id="question" class="text-xl font-bold text-slate-800 mb-6"></h2>
-            <div id="options" class="space-y-3"></div>
-        </div>
 
-        <div id="result-view" class="hidden text-center">
-            <div class="text-5xl mb-4">🎉</div>
-            <h2 class="text-2xl font-bold mb-2 text-slate-800">테스트 종료!</h2>
-            <p id="score-text" class="text-slate-600 mb-8"></p>
-            <button onclick="location.reload()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold hover:bg-slate-900 transition">다시 하기</button>
+            <div id="quiz-view" class="hidden">
+                <div id="category" class="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-bold mb-4">배송문의</div>
+                
+                <div id="image-container" class="mb-6 rounded-2xl overflow-hidden border border-slate-100 hidden">
+                    <img id="scenario-image" src="" alt="상황 이미지" class="w-full h-48 object-cover">
+                </div>
+
+                <h2 id="question" class="text-xl font-bold text-slate-800 mb-6 leading-snug"></h2>
+                <div id="options" class="space-y-3"></div>
+            </div>
+
+            <div id="result-view" class="hidden text-center">
+                <div id="badge-area" class="mb-6">
+                    <div id="master-badge" class="hidden">
+                        <div class="text-7xl mb-4">🎖️</div>
+                        <h2 class="text-3xl font-extrabold text-blue-600 mb-2">CS MASTER 인증</h2>
+                    </div>
+                    <div id="fail-badge" class="hidden">
+                        <div class="text-7xl mb-4">🧐</div>
+                        <h2 class="text-2xl font-bold text-slate-800 mb-2">조금 더 복습해볼까요?</h2>
+                    </div>
+                </div>
+                <p id="score-text" class="text-slate-600 mb-8 font-medium"></p>
+                <button onclick="location.reload()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold hover:bg-slate-900 transition">다시 도전하기</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // 이 부분이 바로 질문하신 JSON 데이터를 넣는 곳입니다!
         const quizData = [
-            { q: "고객이 '결제는 했는데 주문 내역이 안 떠요'라고 할 때, 적절하지 않은 태도는?", a: ["상담 종료 후 나중에 확인하라고 한다", "주문 내역을 상세히 조회해 준다", "판매자가 챙기고 있다고 안심시킨다", "마이페이지 확인 경로를 안내한다"], c: 0 },
-            { q: "단골 전환을 위해 고객을 부르는 가장 좋은 호칭은?", a: ["고객님", "구매자님", "방송 닉네임", "선생님"], c: 2 },
-            { q: "구매 취소를 방어하기 위해 사용하는 기법은?", a: ["재구매 할인 제안", "선택 칭찬하기", "사은품 약속", "빠른 배송 강조"], c: 1 }
+            { 
+                category: "주문문의",
+                img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80",
+                q: "고객이 '주문이 된 건지 모르겠어요'라며 확인을 요청할 때 가장 적절한 답변은?", 
+                a: ["주문번호 알려주세요.", "네, 정상적으로 잘 들어왔어요! 인기 상품 잘 고르셨네요 👍", "마이페이지 가서 직접 확인해 보세요.", "전산 확인 중이니 기다려주세요."], 
+                c: 1,
+                exp: "닉네임을 부르고 상품 선택을 칭찬하여 확신을 주는 것이 포인트입니다."
+            },
+            { 
+                category: "배송문의",
+                img: "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?auto=format&fit=crop&w=800&q=80",
+                q: "전산상 주문 내역이 확인되지 않을 때 안내해야 할 경로는?", 
+                a: ["이메일 수신함", "공지사항", "마이페이지 > 주문, 결제 내역", "은행 이체 내역"], 
+                c: 2,
+                exp: "고객이 직접 확인 가능한 정확한 경로를 안내해야 합니다."
+            },
+            // ... 나머지 12개 문제를 여기에 추가하세요!
         ];
 
         let currentIdx = 0;
         let score = 0;
+        let selectedQuestions = [];
 
         function startQuiz() {
+            // 14개 중 10개 랜덤 추출
+            selectedQuestions = quizData.sort(() => Math.random() - 0.5).slice(0, 10);
             document.getElementById('setup-view').classList.add('hidden');
             document.getElementById('quiz-view').classList.remove('hidden');
             showQuestion();
         }
 
         function showQuestion() {
-            const data = quizData[currentIdx];
-            document.getElementById('progress').innerText = `${currentIdx + 1} / ${quizData.length}`;
+            const data = selectedQuestions[currentIdx];
+            
+            // 프로그레스 바 및 텍스트 업데이트
+            document.getElementById('progress-bar').style.width = `${(currentIdx / selectedQuestions.length) * 100}%`;
+            document.getElementById('category').innerText = data.category;
             document.getElementById('question').innerText = data.q;
+
+            // 이미지 처리
+            const imgContainer = document.getElementById('image-container');
+            const scenarioImg = document.getElementById('scenario-image');
+            if (data.img) {
+                scenarioImg.src = data.img;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '';
             data.a.forEach((opt, i) => {
                 const btn = document.createElement('button');
-                btn.className = "option-btn w-full text-left p-4 border-2 border-slate-100 rounded-xl transition duration-200";
+                btn.className = "option-btn w-full text-left p-4 border-2 border-slate-100 rounded-2xl font-medium text-slate-700";
                 btn.innerText = opt;
                 btn.onclick = () => checkAnswer(i);
                 optionsDiv.appendChild(btn);
@@ -65,16 +117,29 @@
         }
 
         function checkAnswer(i) {
-            if (i === quizData[currentIdx].c) score++;
+            if (i === selectedQuestions[currentIdx].c) score++;
+            
             currentIdx++;
-            if (currentIdx < quizData.length) showQuestion();
-            else showResult();
+            if (currentIdx < selectedQuestions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
         }
 
         function showResult() {
             document.getElementById('quiz-view').classList.add('hidden');
             document.getElementById('result-view').classList.remove('hidden');
-            document.getElementById('score-text').innerText = `${quizData.length}문제 중 ${score}문제를 맞히셨습니다!`;
+            document.getElementById('progress-bar').style.width = `100%`;
+
+            const scorePercent = (score / selectedQuestions.length) * 100;
+            document.getElementById('score-text').innerText = `총 10문제 중 ${score}문제를 맞히셨습니다.`;
+
+            if (scorePercent === 100) {
+                document.getElementById('master-badge').classList.remove('hidden');
+            } else {
+                document.getElementById('fail-badge').classList.remove('hidden');
+            }
         }
     </script>
 </body>
