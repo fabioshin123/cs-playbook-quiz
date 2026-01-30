@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CS MASTER PROGRAM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; overflow: hidden; background-color: #f8fafc; }
+        
+        input[type="radio"]:checked + div { border-color: #ec4899; background-color: #fdf2f8; }
+        input[type="radio"]:checked + div .circle { border-color: #ec4899; background-color: #ec4899; box-shadow: inset 0 0 0 2px white; }
+        
+        .btn-active-glow { 
+            animation: glow 1.5s infinite alternate; 
+            border: 2px solid #ec4899 !important; 
+            background-color: #fff !important;
+            transform: scale(1.02);
+            cursor: pointer !important;
+        }
+        @keyframes glow { from { box-shadow: 0 0 5px #fbcfe8; } to { box-shadow: 0 0 20px #f472b6; } }
+        
+        .btn-locked { background-color: #f1f5f9 !important; color: #94a3b8 !important; cursor: not-allowed !important; border: 2px solid #e2e8f0 !important; opacity: 0.7; pointer-events: none; }
+
+        .effect-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8rem; font-weight: 900; pointer-events: none; z-index: 100; }
+        .correct-effect { color: #10b981; animation: pop 0.6s ease-out forwards; }
+        .wrong-effect { color: #ef4444; animation: pop 0.6s ease-out forwards; }
+        @keyframes pop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; } 40% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0; } }
+        
+        #progress-inner { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-2 text-slate-900">
+    <div id="effect-layer" class="effect-overlay"></div>
+
+    <div id="quiz-app" class="bg-white w-full max-w-xl h-[95vh] max-h-[850px] rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 relative flex flex-col">
+        
+        <div id="progress-container" class="hidden absolute top-0 left-0 w-full h-1.5 bg-slate-100 z-10">
+            <div id="progress-inner" class="h-full bg-pink-500 w-0"></div>
+        </div>
+
+        <div id="setup-view" class="p-6 md:p-8 text-center flex-1 flex flex-col justify-center">
+            <div class="inline-block bg-red-100 text-red-600 px-3 py-1 rounded-full text-[10px] font-black mb-4 animate-pulse uppercase">Master Certification</div>
+            <h1 class="text-2xl md:text-3xl font-black mb-2 tracking-tight text-slate-800 italic uppercase leading-none">CS MASTER<br>PROGRAM</h1>
+            
+            <div class="bg-slate-800 text-white rounded-3xl p-4 my-6 flex justify-around shadow-lg">
+                <div class="text-center">
+                    <p class="text-[9px] opacity-60 uppercase font-bold">Inscribed</p>
+                    <p class="text-lg font-black"><span id="count-filled">0</span>명</p>
+                </div>
+                <div class="h-8 w-[1px] bg-white/20"></div>
+                <div class="text-center">
+                    <p class="text-[9px] opacity-60 text-pink-300 uppercase font-bold">Remaining</p>
+                    <p class="text-lg font-black text-pink-400"><span id="count-left">50</span>석</p>
+                </div>
+            </div>
+
+            <div class="bg-pink-50 border-2 border-pink-100 rounded-3xl p-5 mb-6 text-left shadow-sm">
+                <label class="block text-pink-600 font-black text-[10px] italic underline mb-2 text-center uppercase tracking-widest">Enter Your Grip Nickname</label>
+                <input type="text" id="user-nickname" placeholder="닉네임을 입력하세요" class="w-full p-3 rounded-2xl border-2 border-white focus:border-pink-400 outline-none text-base shadow-inner font-bold text-center">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <button id="step1-btn" onclick="startStep(1)" class="group p-5 bg-white border-2 border-slate-100 rounded-[2rem] hover:border-pink-400 transition-all text-left">
+                    <span id="step1-tag" class="inline-block px-2 py-0.5 bg-pink-100 text-pink-500 rounded-full text-[9px] font-black tracking-widest uppercase mb-2">Step 01</span>
+                    <h4 class="font-black text-slate-800 text-lg italic">마스터 학습</h4>
+                </button>
+                <button id="step2-btn" onclick="startStep(2)" class="btn-locked group p-5 border-2 border-slate-100 rounded-[2rem] transition-all text-left">
+                    <span id="step2-tag" class="inline-block px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full text-[9px] font-black tracking-widest uppercase mb-2">Step 02</span>
+                    <h4 id="step2-title" class="font-black text-lg text-slate-400 italic tracking-tighter">인증 테스트</h4>
+                </button>
+            </div>
+            
+            <div class="border-t border-slate-100 pt-6 text-left flex-1 overflow-hidden">
+                <h3 class="font-black text-slate-400 mb-3 uppercase text-[10px] tracking-widest flex items-center gap-1">🏅 Master List</h3>
+                <div id="master-list" class="space-y-2 overflow-y-auto max-h-[140px] pr-1 text-sm custom-scrollbar">
+                    <p class="text-center py-4 italic text-xs text-slate-300">데이터를 로딩 중...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="quiz-view" class="hidden p-5 md:p-8 flex flex-col h-full">
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="location.reload()" class="text-blue-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1">
+                    <span class="bg-blue-500 text-white w-3.5 h-3.5 flex items-center justify-center rounded-sm text-[7px]">⬅</span> EXIT
+                </button>
+                <div id="theme-depth-1" class="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border bg-white">카테고리</div>
+                <span id="quiz-progress-text" class="text-slate-300 text-[10px] font-black italic">0%</span>
+            </div>
+
+            <div class="text-center mb-4">
+                <h3 id="theme-depth-2" class="text-2xl md:text-3xl font-black text-slate-800 tracking-tighter italic leading-tight mb-1">상세 과목명</h3>
+                <div class="w-12 h-1 bg-pink-500 mx-auto rounded-full"></div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                <div id="quiz-image-container" class="mb-4 w-full h-32 bg-slate-100 rounded-3xl overflow-hidden flex items-center justify-center">
+                    </div>
+
+                <div id="scenario-desc" class="bg-slate-50 p-4 rounded-2xl text-[12px] text-slate-600 mb-6 italic border-l-4 border-pink-400 leading-relaxed font-medium"></div>
+                
+                <div class="mb-4">
+                    <span class="text-[9px] font-black text-pink-500 uppercase tracking-widest mb-1 block">Question</span>
+                    <h2 id="question-text" class="text-lg font-bold text-slate-800 leading-snug"></h2>
+                </div>
+
+                <div id="options-container" class="space-y-2.5 pb-4"></div>
+
+                <div id="feedback-area" class="mt-4 hidden border-t border-slate-100 pt-6">
+                    <div class="p-5 bg-green-50 border border-green-100 rounded-3xl mb-4 shadow-sm">
+                        <span class="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1 block">💡 단골만들기 TIP</span>
+                        <p id="explanation-text" class="text-green-800 text-[13px] font-bold leading-relaxed"></p>
+                    </div>
+                    <button id="quiz-next-btn" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-base hover:bg-slate-800 transition shadow-xl active:scale-95 uppercase tracking-widest">Next Step</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-view" class="hidden p-8 text-center flex-1 flex flex-col justify-center">
+            <div class="text-8xl mb-6">🏆</div>
+            <h2 class="text-3xl font-black mb-2 italic tracking-tighter uppercase leading-none"><span id="res-nickname" class="text-pink-600 font-black"></span> Master</h2>
+            <p class="text-slate-500 mb-8 font-bold text-sm leading-relaxed uppercase tracking-tighter">Certification Acquired</p>
+            <button id="submit-btn" onclick="submitResult()" class="w-full bg-pink-600 text-white py-5 rounded-3xl font-black text-lg shadow-2xl hover:bg-pink-700 transition active:scale-95">인증 등록 및 리뷰하기</button>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            // 마스터 리스트: 구글 시트 '웹에 게시' → CSV 링크. 2번째 열(B열)이 닉네임. CORS 때문에 직접 요청이 막히면 프록시 사용.
+            CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSTBUxAlCgto9_mwKuJcdg3DU8xNvbQGyH_-tqXS_nZbjQq8s1c-R4AzEgcvUpJr7Wwt_U3ME3rk6k2/pub?gid=0&single=true&output=csv',
+            CORS_PROXY: 'https://api.allorigins.win/raw?url=',  // 구글 시트 CSV가 CORS 미지원이라 실패 시 사용
+            API_URL: 'https://script.google.com/macros/s/AKfycbyEv8g-2lI9bPqmjbeowI7ZzCVxNXMuZd18l6jnDh_fNaUn4fRJxlOmcpzyjftuxurzWA/exec', 
+            REVIEW_URL: 'https://forms.gle/EbwAbbV36ALXkiBb7'
+        };
+
+        const CATEGORY_COLORS = {
+            "상품": "bg-amber-50 text-amber-600 border-amber-200",
+            "배송": "bg-blue-50 text-blue-600 border-blue-200",
+            "반품·교환": "bg-emerald-50 text-emerald-600 border-emerald-200"
+        };
+
+        // 퀴즈 데이터에 이미지 태그 설명 추가
+        const quizData = [
+            { cat: "상품", subject: "1. 주문 내역 확인", desc: "고객이 주문 접수 여부를 묻는 상황입니다. 닉네임을 부르며 고객의 선택을 칭찬하세요.", 
+              imgTag: "",
+              questions: [
+                { q: "주문 확인 시 고객과 관계를 맺기 위한 필수 호칭은?", a: ["고객님", "구매자님", "방송 닉네임", "선생님"], c: 2, exp: "닉네임을 부르는 것만으로도 나를 알아봐 준다는 특별한 감정이 팬심의 시작입니다." },
+                { q: "구매 취소를 방어하는 '선택 칭찬' 답변으로 적절한 것은?", a: ["정상 확인되었습니다.", "제일 인기 많은 상품을 딱 고르셨네요! 👍", "마이페이지 확인하세요.", "금방 보낼게요."], c: 1, exp: "고객의 구매 결정이 옳았음을 지지해주면 취소율이 낮아지는 효과가 있습니다." },
+                { q: "전산상 주문이 없을 때의 대처법으로 옳은 것은?", a: ["재주문 요구", "시스템 탓", "불안 공감 후 확인 경로 안내", "무시"], c: 2, exp: "튕김 가능성을 먼저 언급하며 공감해주어야 고객의 방어기제가 낮아집니다." }
+              ] 
+            },
+            { cat: "상품", subject: "2. 재입고/품절 여부", desc: "품절은 거절이 아니라 '다음 방송을 보게 할 명분'입니다. 아쉬움을 팔로우 혜택으로 전환하세요.",
+              imgTag: "",
+              questions: [
+                { q: "플레이북에서 정의하는 '품절'의 마케팅적 가치는?", a: ["사과", "다음 방송을 보게 할 명분 만들기", "취소", "휴식"], c: 1, exp: "품절 문의 고객은 구매 의지가 높으므로 팔로우 유도로 관계를 이어가야 합니다." },
+                { q: "팔로우를 혜택처럼 포장하는 세련된 멘트는?", a: ["팔로우 부탁", "알림 필수", "팔로우 켜두시면 남보다 빨리 사는 비법을 챙기실 수 있어요!", "쿠폰"], c: 2, exp: "정보 선점의 비결로 인식시켜야 합니다." },
+                { q: "품절 응대 시 대화의 첫 문장에 들어가야 할 내용은?", a: ["이유", "날짜", "고객의 아쉬운 마음에 대한 공감", "대체 추천"], c: 2, exp: "공감 먼저, 설명은 그다음입니다." }
+              ]
+            },
+            { cat: "배송", subject: "3. 송장 번호 조회 불가", desc: "송장 등록 후 조회가 안 되는 '물리적 시차'를 이해시켜야 신뢰가 형성됩니다.",
+              imgTag: "",
+              questions: [
+                { q: "송장 조회가 안 되는 가장 적절한 논리는?", a: ["서버 오류", "물류센터 입고 및 바코드 반영 시차 설명", "기사님 과실", "시스템 점검"], c: 1, exp: "허브 도착 후 바코드를 찍어야 조회가 시작됨을 알려 불안을 해소합니다." },
+                { q: "조회 불가 상황에서 고객에게 주는 확신 멘트는?", a: ["대기", "상품은 제 손을 떠나 확실히 출발했습니다!", "직접 확인", "나중에 됩니다"], c: 1, exp: "판매자의 손을 떠났음을 강조해 배송 시작의 확신을 줍니다." },
+                { q: "재문의 감소를 위해 제시해야 할 정보는?", a: ["오늘 밤", "내일 아침 9시처럼 구체적 확인 시간 지정", "모니터링", "최대한 빨리"], c: 1, exp: "확인 가능한 구체적 기준점을 주면 고객은 편안하게 기다립니다." }
+              ]
+            },
+            { cat: "배송", subject: "4. 배송 지연", desc: "지연의 이유를 '인기 집중'으로 설명하면 기다림의 명분이 생깁니다.",
+              imgTag: "",
+              questions: [
+                { q: "지연 사유를 인기 집중 전략으로 활용한 멘트는?", a: ["물량 부족", "방송 반응이 너무 좋아 주문이 몰렸어요", "택배 파업", "준비 미흡"], c: 1, exp: "지연을 인기 폭발로 승화시키면 취소율이 낮아집니다." },
+                { q: "일정 안내 시 절대 사용하지 말아야 할 표현은?", a: ["날짜 지정", "조만간/빠른 시일 내", "요일 지정", "영업일 안내"], c: 1, exp: "모호한 표현은 불안을 키웁니다." },
+                { q: "고객에게 확신을 주는 약속은?", a: ["기다리세요", "내일까지 이동 없으면 제가 먼저 택배사 확인할게요", "기사님 번호", "답답하시죠"], c: 1, exp: "판매자의 선제적 행동 약속은 큰 신뢰를 줍니다." }
+              ]
+            },
+            { cat: "배송", subject: "5. 배송 누락", desc: "배송 완료라는데 물건이 없는 상황. 고객을 '보호 대상'으로 대하세요.",
+              imgTag: "",
+              questions: [
+                { q: "누락 클레임 시 가장 먼저 보여야 할 태도는?", a: ["증거 제시", "고객 전적 신뢰 및 해결사 자처", "기사님 탓", "주소 확인"], c: 1, exp: "일단 고객의 말이 맞다는 전제하에 대화를 시작해야 합니다." },
+                { q: "불안을 즉시 낮추는 선제 안내 사항은?", a: ["확인 후 연락", "분실 확인 시 즉시 재발송/환불 약속", "경찰 신고", "비용 요구"], c: 1, exp: "해결책이 있음을 미리 알려 분노를 가라앉히세요." },
+                { q: "사진을 요청할 때 적절한 톤은?", a: ["사진 필수", "확인 도와주시면 더 빠르게 처리가 가능해요", "증거", "사기 의심"], c: 1, exp: "절차상 빠른 처리를 위함임을 강조하세요." }
+              ]
+            },
+            { cat: "배송", subject: "6. 오배송", desc: "실수를 인정하고 고객의 '귀찮음'을 판매자가 짊어지세요.",
+              imgTag: "",
+              questions: [
+                { q: "오배송 시 신뢰 회복을 위한 가장 빠른 조치는?", a: ["회수 후 발송", "실수 인정 후 새 상품 선출고", "부분 환불", "적립금"], c: 1, exp: "수거 전 새 상품을 먼저 보내는 속도가 신뢰를 다시 만듭니다." },
+                { q: "고객의 번거로움을 덜어주는 안내는?", a: ["직접 접수", "제가 다 접수했으니 문 앞에만 놔주세요", "포장 새로", "우체국 방문"], c: 1, exp: "행정 절차는 판매자가 하고 고객은 문 앞에 놓기만 하게 하세요." },
+                { q: "실수 인정 시 더 적절한 표현은?", a: ["착오 발생", "저희 출고 과정에서 실수가 있었어요", "시스템 오류", "직원 실수"], c: 1, exp: "책임을 명확히 인정해야 신뢰가 빠르게 회복됩니다." }
+              ]
+            },
+            { cat: "배송", subject: "7. 배송지 변경", desc: "불가한 상황일수록 '안전 장치' 논리로 문제를 해결하세요.",
+              imgTag: "",
+              questions: [
+                { q: "변경 불가 사유 설명 시 적절한 논리는?", a: ["규정상 불가", "분실 사고를 막기 위한 안전 절차", "기사님 반대", "비용 발생"], c: 1, exp: "정책을 물건을 지키는 보호 수단으로 설명하세요." },
+                { q: "불가 시 고객 이탈을 막는 태도는?", a: ["거절", "해결할 방법이 있을지 같이 확인해 볼게요", "포기 유도", "재주문"], c: 1, exp: "문제를 해결하려는 파트너로서 함께 고민하는 자세를 보이세요." },
+                { q: "가능 여부 확인 시 신뢰를 주는 제스처는?", a: ["전산만 확인", "현장 물류팀에 한 번 더 확인", "기사님 연결", "변경 권유"], c: 1, exp: "현장을 확인해보겠다는 태도 자체가 고객에게 큰 안도감을 줍니다." }
+              ]
+            },
+            { cat: "배송", subject: "8. 합배송 요청", desc: "합배송창을 '누락 방지 안전 버튼'으로 인식시키세요.",
+              imgTag: "",
+              questions: [
+                { q: "합배송창 시스템의 핵심 가치는?", a: ["배송비 절약", "누락을 막아주는 안전 장치", "장바구니 기능", "결제 유도"], c: 1, exp: "실수 방지 시스템임을 강조하면 고객이 흔쾌히 따릅니다." },
+                { q: "합배송 안내 시 덧붙여야 할 문장은?", a: ["직접 챙겨둘게요", "필수입니다", "따로 발송", "감사"], c: 0, exp: "시스템 설명 뒤에 내가 챙기고 있다는 메시지를 남기세요." },
+                { q: "가장 확실한 합배송 안내법은?", a: ["구두 요청", "전체 취소 후 합배송창 포함 재주문", "배송비 환불", "분할 발송"], c: 1, exp: "시스템을 타지 않는 요청은 누락될 위험이 큽니다." }
+              ]
+            },
+            { cat: "반품·교환", subject: "9. 처리 지연", desc: "도착 후 공백은 불안의 시간입니다. '안전 도착' 사실을 먼저 알리세요.",
+              imgTag: "",
+              questions: [
+                { q: "반품 도착 후 불안을 잠재우는 첫 마디는?", a: ["순차 처리", "상품은 안전하게 저희 쪽에 도착했어요!", "검수 진행", "환불 대기"], c: 1, exp: "물건이 안전하게 들어왔다는 사실 확인만으로도 불안감이 줄어듭니다." },
+                { q: "검수 과정을 부드럽게 설명하는 언어는?", a: ["하자 확인", "배송 중 이상은 없었는지 확인하여 보호하는 단계", "의심 확인", "규정"], c: 1, exp: "품질 유지를 위한 보호 단계로 표현하세요." },
+                { q: "예측 가능한 기다림을 주는 안내법은?", a: ["곧 완료", "0일까지 변화 없으면 제가 먼저 확인해 안내드릴게요", "대기 요청", "순서 대기"], c: 1, exp: "기한을 약속하고 내가 먼저 확인하겠다는 태도가 신뢰를 만듭니다." }
+              ]
+            },
+            { cat: "반품·교환", subject: "10. 처리 불가", desc: "판단의 주체를 '공정한 기준'으로 분리하세요.",
+              imgTag: "",
+              questions: [
+                { q: "반품 불가 안내 시 분리해야 할 판단 주체는?", a: ["개인 기분", "모든 고객에게 동일하게 적용되는 미리 안내된 기준", "대표 지시", "택배 규정"], c: 1, exp: "거절의 원인을 내가 아닌 공정한 약속으로 향하게 하세요." },
+                { q: "불가 시 관계의 문을 열어두는 멘트는?", a: ["이상", "도와드리지 못해 정말 아쉬운 마음이에요", "절대 안됨", "끝"], c: 1, exp: "결과는 거절이어도 관계의 마지막 문장은 다정하게 닫으세요." },
+                { q: "정책을 거부감 없이 설명하는 비유는?", a: ["통제", "모든 구매자에게 동일한 품질을 지키기 위한 약속", "손해 방지", "법적 근거"], c: 1, exp: "품질 수호의 가치로 설명하세요." }
+              ]
+            },
+            { cat: "반품·교환", subject: "11. 부분 환불", desc: "고객의 실질 손익을 걱정해주는 조언자가 되세요.",
+              imgTag: "",
+              questions: [
+                { q: "배송비 차감 등 환불금이 적어질 때의 설명법은?", a: ["수수료", "혜택 조건 변경에 따른 투명한 정산 과정 설명", "이해 불가", "규칙"], c: 1, exp: "부당 차감이 아닌 구매 조건의 정산임을 이해시켜야 합니다." },
+                { q: "환불보다 소장이 이득인 경우 제안은?", a: ["취소 금지", "소장하시는 게 합리적일 것 같아요", "환불 안됨", "그냥 쓰세요"], c: 1, exp: "고객의 실질 이득을 걱정하는 태도가 팬을 만듭니다." },
+                { q: "부분 환불 CS의 핵심은?", a: ["가능 통보", "왜 그런지 이해시키기", "계산서 전송", "무대응"], c: 1, exp: "구조를 납득시켜야 불만이 해소됩니다." }
+              ]
+            },
+            { cat: "반품·교환", subject: "12. 교환 옵션 변경", desc: "교환은 완벽한 아이템을 찾아주는 컨설팅입니다.",
+              imgTag: "",
+              questions: [
+                { q: "출고 전 옵션 변경 요청 시 최고의 멘트는?", a: ["변경 완료", "연락 주셨어요! 출고 전이라 변경 가능해요 😊", "늦었어요", "재주문"], c: 1, exp: "속도감 있는 확인과 칭찬이 결합되면 고객은 깊이 감동합니다." },
+                { q: "출고 후 변경 불가 시 멘트는?", a: ["불가", "어렵지만 과정 제가 끝까지 챙겨드릴게요", "택배 문의", "반품"], c: 1, exp: "혼자 하게 두지 않겠다는 책임감이 신뢰를 만듭니다." },
+                { q: "재고 부족 시 대안 제시는?", a: ["품절", "요청 옵션은 품절이라 다른 대안들 안내드릴게요", "없음", "취소"], c: 1, exp: "대안을 제시해야 거절의 느낌이 안 납니다." }
+              ]
+            },
+            { cat: "반품·교환", subject: "13. 귀책 기준 판단", desc: "객관적 기준으로 하되 부드러운 태도로 하세요.",
+              imgTag: "",
+              questions: [
+                { q: "귀책 판단의 기본 원칙은?", a: ["고객이 화내면 판매자", "객관적 상태와 상세페이지 고지 내용 기준", "내 맘대로", "여론"], c: 1, exp: "일관된 정보가 기준이 되어야 고객에게 신뢰를 줍니다." },
+                { q: "고객 귀책 시에도 부드럽게 안내하는 법은?", a: ["고객 잘못", "기대하셨을 텐데 아쉬워요 😢", "규정 확인", "안됨"], c: 1, exp: "판단은 단호하게 하되 태도는 따뜻해야 합니다." },
+                { q: "판매자 귀책 시 먼저 제시해야 할 것은?", a: ["변명", "사과 + 해결 방향", "직원 탓", "침묵"], c: 1, exp: "실수를 인정하고 해결책을 선제 제시하면 오히려 호감도가 상승합니다." }
+              ]
+            },
+            { cat: "반품·교환", subject: "14. 환불 소요 기간", desc: "환불은 확실한 정보가 신뢰를 만듭니다.",
+              imgTag: "",
+              questions: [
+                { q: "환불 지연 시 주체를 분리해 안심시키는 법은?", a: ["기다려라", "현재는 카드사가 정산 중인 단계예요", "카드사 탓", "무대응"], c: 1, exp: "판매자의 역할은 끝났음을 알리고 남은 단계를 안내하세요." },
+                { q: "영업일 기준 안내 시 제외되는 날은?", a: ["월요일", "주말/공휴일", "배송일", "결제일"], c: 1, exp: "은행 휴무일을 상기시켜 정상 절차임을 인지시켜야 합니다." },
+                { q: "먹튀 걱정 고객에게 주는 확신은?", a: ["설마요", "누락 전혀 없으니 안심하고 기다려 주세요 😊", "고소", "금방됨"], c: 1, exp: "절대 누락 없음을 확언하고 기한을 언급해 안심시키세요." }
+              ]
+            }
+        ];
+
+        let currentMode = 1, sIdx = 0, qIdx = 0, testSet = [];
+        const allQs = quizData.flatMap(s => s.questions.map(q => ({...q, sub: s.subject, desc: s.desc, cat: s.cat, imgTag: s.imgTag})));
+
+        window.onload = function() {
+            const savedNick = localStorage.getItem('CS_MASTER_USER_NICK_V6');
+            if(savedNick) document.getElementById('user-nickname').value = savedNick;
+            loadMasterData();
+        };
+
+        function parseCSVLine(line) {
+            const out = []; let cur = '', inQ = false;
+            for (let i = 0; i < line.length; i++) {
+                const c = line[i];
+                if (c === '"') { inQ = !inQ; continue; }
+                if (!inQ && c === ',') { out.push(cur.trim()); cur = ''; continue; }
+                cur += c;
+            }
+            out.push(cur.trim());
+            return out;
+        }
+
+        async function loadMasterData() {
+            const listEl = document.getElementById('master-list');
+            const csvUrl = CONFIG.CSV_URL + (CONFIG.CSV_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+            let data = null;
+            try {
+                let res = await fetch(csvUrl);
+                if (!res.ok) throw new Error('Direct fetch failed');
+                data = await res.text();
+            } catch (e1) {
+                try {
+                    res = await fetch(CONFIG.CORS_PROXY + encodeURIComponent(csvUrl));
+                    if (!res.ok) throw new Error('Proxy fetch failed');
+                    data = await res.text();
+                } catch (e2) {
+                    listEl.innerHTML = '<p class="text-center py-4 italic text-xs text-amber-600">마스터 리스트를 불러올 수 없습니다.<br>구글 시트가 "웹에 게시"되어 있는지 확인해 주세요.</p>';
+                    document.getElementById('count-filled').innerText = '0';
+                    document.getElementById('count-left').innerText = '50';
+                    updateStep2ByQuota(0);
+                    return;
+                }
+            }
+            const lines = data.split(/\r?\n/).map(r => r.trim()).filter(r => r.length > 0);
+            const rows = lines.length <= 1 ? [] : lines.slice(1);
+            const list = [];
+            for (const row of rows) {
+                const cols = parseCSVLine(row);
+                const nick = (cols[1] != null ? cols[1] : cols[0] || '').replace(/^"|"$/g, '').trim();
+                if (nick) list.push(nick);
+            }
+            document.getElementById('count-filled').innerText = list.length;
+            document.getElementById('count-left').innerText = Math.max(0, 50 - list.length);
+            listEl.innerHTML = '';
+            if (list.length === 0) {
+                listEl.innerHTML = '<p class="text-center py-4 italic text-xs text-slate-400">등록된 마스터가 없습니다.</p>';
+                return;
+            }
+            list.reverse().slice(0, 50).forEach((nick, idx) => {
+                listEl.innerHTML += `<div class="flex justify-between items-center p-3 bg-white border border-slate-100 rounded-2xl shadow-sm mb-1 font-bold text-slate-700 text-xs">No.${list.length - idx} ${nick} Master</div>`;
+            });
+            updateStep2ByQuota(list.length);
+        }
+
+        function updateStep2ByQuota(filledCount) {
+            if (filledCount >= 50) {
+                lockStep2BecauseFull();
+            } else if (localStorage.getItem('CS_MASTER_STEP1_COMPLETE_V6') === 'true') {
+                activateStep2UI();
+            }
+        }
+
+        function lockStep2BecauseFull() {
+            const btn2 = document.getElementById('step2-btn');
+            btn2.classList.add('btn-locked');
+            btn2.classList.remove('btn-active-glow');
+            btn2.dataset.quotaFull = 'true';
+            const titleEl = document.getElementById('step2-title');
+            titleEl.innerText = '인증 테스트 (정원 마감)';
+            titleEl.className = 'font-black text-lg text-slate-400 italic tracking-tighter';
+            document.getElementById('step2-tag').classList.add('bg-slate-200', 'text-slate-500');
+            document.getElementById('step2-tag').classList.remove('bg-pink-600', 'text-white');
+        }
+
+        function activateStep2UI() {
+            const btn2 = document.getElementById('step2-btn');
+            btn2.classList.remove('btn-locked');
+            btn2.classList.add('btn-active-glow');
+            delete btn2.dataset.quotaFull;
+            const titleEl = document.getElementById('step2-title');
+            titleEl.innerText = '인증 테스트';
+            titleEl.classList.replace('text-slate-400', 'text-slate-800');
+            document.getElementById('step2-tag').classList.replace('bg-slate-200', 'bg-pink-600');
+            document.getElementById('step2-tag').classList.replace('text-slate-500', 'text-white');
+            const btn1 = document.getElementById('step1-btn');
+            if(!btn1.innerHTML.includes('✅')) btn1.querySelector('h4').innerHTML += " ✅";
+        }
+
+        function startStep(step) {
+            const nick = document.getElementById('user-nickname').value.trim();
+            if(!nick) return alert("닉네임을 입력하세요!");
+            if (step === 2) {
+                const left = parseInt(document.getElementById('count-left').innerText, 10);
+                if (left <= 0) return alert("정원이 마감되었습니다. 파이널 테스트는 50명 한정입니다.");
+                if (document.getElementById('step2-btn').dataset.quotaFull === 'true') return;
+            }
+            localStorage.setItem('CS_MASTER_USER_NICK_V6', nick);
+            currentMode = step;
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            document.getElementById('progress-container').classList.remove('hidden');
+            if(step === 1) { sIdx = 0; qIdx = 0; loadLearning(); }
+            else { sIdx = 0; testSet = allQs.sort(() => 0.5 - Math.random()).slice(0, 10); loadTest(); }
+        }
+
+        function loadLearning() {
+            const s = quizData[sIdx], q = s.questions[qIdx];
+            updateProgressBar((sIdx * 3) + qIdx, 42);
+            renderUI(s.cat, s.subject, s.desc, q.q, q.a, s.imgTag);
+        }
+
+        function loadTest() {
+            const q = testSet[sIdx];
+            updateProgressBar(sIdx, 10);
+            renderUI(q.cat, "Final Test", q.desc, q.q, q.a, q.imgTag);
+        }
+
+        function renderUI(cat, sub, desc, q, opts, imgTag) {
+            const imgContainer = document.getElementById('quiz-image-container');
+            imgContainer.innerHTML = `<p class="text-[10px] text-slate-300 italic p-4 text-center font-bold uppercase tracking-tighter">${imgTag}</p>`;
+
+            document.getElementById('theme-depth-1').innerText = cat;
+            document.getElementById('theme-depth-1').className = `px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border bg-white ${CATEGORY_COLORS[cat] || ''}`;
+            document.getElementById('theme-depth-2').innerText = sub;
+            document.getElementById('scenario-desc').innerText = desc;
+            document.getElementById('question-text').innerText = q;
+            document.getElementById('feedback-area').classList.add('hidden');
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            opts.forEach((o, i) => {
+                container.innerHTML += `
+                    <label class="block cursor-pointer">
+                        <input type="radio" name="opt" class="hidden" onclick="checkAnswer(${i})">
+                        <div class="flex items-center p-4 border-2 border-slate-100 rounded-2xl hover:border-pink-200 shadow-sm transition-all bg-white">
+                            <div class="circle w-5 h-5 border-2 border-slate-200 rounded-full mr-4 transition-all shrink-0"></div>
+                            <span class="text-slate-700 font-bold text-sm md:text-base leading-tight">${o}</span>
+                        </div>
+                    </label>`;
+            });
+            document.querySelector('.flex-1.overflow-y-auto').scrollTo(0, 0);
+        }
+
+        function checkAnswer(i) {
+            const q = currentMode === 1 ? quizData[sIdx].questions[qIdx] : testSet[sIdx];
+            if(i === q.c) {
+                showEffect('O', 'correct-effect');
+                document.getElementById('explanation-text').innerText = q.exp;
+                document.getElementById('feedback-area').classList.remove('hidden');
+                document.querySelectorAll('input[name="opt"]').forEach(el => el.disabled = true);
+                document.getElementById('quiz-next-btn').onclick = handleNext;
+                // 정답 시 단골만들기 팁 + 다음 스텝 버튼이 보이도록 스크롤을 맨 아래로
+                const scrollEl = document.querySelector('#quiz-view .flex-1.overflow-y-auto');
+                requestAnimationFrame(() => { if(scrollEl) scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' }); });
+            } else {
+                showEffect('X', 'wrong-effect');
+                if(currentMode === 2) { alert("테스트 실패! 만점만 통과 가능합니다."); location.reload(); }
+                else { setTimeout(() => document.querySelectorAll('input[name="opt"]').forEach(el => el.checked = false), 600); }
+            }
+        }
+
+        function handleNext() {
+            if(currentMode === 1) {
+                qIdx++; if(qIdx > 2) { qIdx = 0; sIdx++; }
+                if(sIdx < 14) loadLearning();
+                else { localStorage.setItem('CS_MASTER_STEP1_COMPLETE_V6', 'true'); showStep1Clear(); }
+            } else {
+                sIdx++; if(sIdx < 10) loadTest();
+                else showFinal();
+            }
+        }
+
+        function showStep1Clear() {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            setTimeout(() => { alert("👏👏👏👏👏 1단계 학습 완료! 2단계 버튼이 활성화되었습니다."); location.reload(); }, 500);
+        }
+
+        function showFinal() {
+            updateProgressBar(10, 10);
+            document.getElementById('quiz-view').classList.add('hidden'); 
+            document.getElementById('result-view').classList.remove('hidden'); 
+            document.getElementById('res-nickname').innerText = localStorage.getItem('CS_MASTER_USER_NICK_V6') || ""; 
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 } });
+        }
+
+        function updateProgressBar(cur, total) {
+            const pct = (cur / total) * 100;
+            document.getElementById('progress-inner').style.width = pct + '%';
+            document.getElementById('quiz-progress-text').innerText = Math.round(pct) + '%';
+        }
+
+        function showEffect(txt, cls) {
+            const l = document.getElementById('effect-layer');
+            l.innerText = txt;
+            l.classList.remove('correct-effect', 'wrong-effect');
+            l.offsetHeight; // reflow로 애니메이션 재시작
+            l.classList.add(cls);
+        }
+
+        async function submitResult() {
+            const nick = localStorage.getItem('CS_MASTER_USER_NICK_V6');
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true; btn.innerText = "등록 중...";
+            try {
+                await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ nickname: nick }) });
+                alert("🎖️ CS 마스터 등록 성공! 리뷰 페이지로 이동합니다.");
+                window.location.href = CONFIG.REVIEW_URL;
+            } catch(e) { alert("등록 실패. 다시 시도해 주세요."); btn.disabled = false; btn.innerText = "인증 등록 및 리뷰하기"; }
+        }
+    </script>
+</body>
+</html>
