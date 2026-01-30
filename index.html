@@ -98,7 +98,7 @@
             </div>
 
             <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
-                <div id="quiz-image-container" class="mb-4 w-full h-32 bg-slate-100 rounded-3xl overflow-hidden flex items-center justify-center">
+                <div id="quiz-image-container" class="mb-4 w-full h-52 bg-slate-100 rounded-3xl overflow-hidden flex items-center justify-center">
                     </div>
 
                 <div id="scenario-desc" class="bg-slate-50 p-4 rounded-2xl text-[12px] text-slate-600 mb-6 italic border-l-4 border-pink-400 leading-relaxed font-medium"></div>
@@ -389,7 +389,7 @@
             const imgContainer = document.getElementById('quiz-image-container');
             const isImagePath = imgTag && /\.(png|jpg|jpeg|gif|webp)$/i.test(imgTag);
             if (isImagePath) {
-                imgContainer.innerHTML = `<img src="${imgTag}" alt="" class="w-full h-full object-contain object-center" loading="lazy">`;
+                imgContainer.innerHTML = `<img src="${imgTag}" alt="" class="w-full h-full min-w-full object-cover object-center" loading="lazy">`;
             } else if (imgTag) {
                 imgContainer.innerHTML = `<p class="text-[10px] text-slate-300 italic p-4 text-center font-bold uppercase tracking-tighter">${imgTag}</p>`;
             } else {
