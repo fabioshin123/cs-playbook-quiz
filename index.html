@@ -823,6 +823,7 @@ const quizData = [
             listEl.innerHTML = '';
             if (list.length === 0) {
                 listEl.innerHTML = '<p class="text-center py-4 italic text-xs text-slate-400">등록된 마스터가 없습니다.</p>';
+                updateStep2ByQuota(0);
                 return;
             }
             list.reverse().slice(0, 50).forEach((nick, idx) => {
