@@ -83,7 +83,7 @@
             </div>
         </div>
 
-        <div id="quiz-view" class="hidden p-5 md:p-8 flex flex-col flex-1">
+        <div id="quiz-view" class="hidden p-5 md:p-8 flex flex-col h-full">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-3">
                     <button id="quiz-prev-btn" onclick="goPrev()" class="text-slate-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed">
@@ -131,17 +131,17 @@
             <p class="text-slate-500 mb-8 font-bold text-sm leading-relaxed uppercase tracking-tighter">Certification Acquired</p>
             <button id="submit-btn" onclick="submitResult()" class="w-full bg-pink-600 text-white py-5 rounded-3xl font-black text-lg shadow-2xl hover:bg-pink-700 transition active:scale-95">인증 등록 및 리뷰하기</button>
         </div>
+    </div>
 
-        <div id="brand-footer" class="px-6 pb-4 pt-2 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-bold select-none">
-            <img
-                src="images/griplogo.png"
-                alt="GRIP"
-                class="h-4 w-auto opacity-80"
-                loading="lazy"
-                onerror="if(!this.dataset.f){this.dataset.f='1';this.src='images/griplogo.svg';}else if(this.dataset.f==='1'){this.dataset.f='2';this.src='images/griplogo.webp';}else if(this.dataset.f==='2'){this.dataset.f='3';this.src='images/griplogo.jpg';}else if(this.dataset.f==='3'){this.dataset.f='4';this.src='images/griplogo.jpeg';}else{this.onerror=null;}"
-            >
-            <span class="tracking-tight">고객경험팀</span>
-        </div>
+    <div id="brand-footer" class="mt-2 px-2 pb-2 flex items-center justify-center gap-2 text-[11px] text-slate-400 font-bold select-none">
+        <img
+            src="images/griplogo.png"
+            alt="GRIP"
+            class="h-4 w-auto opacity-80"
+            loading="lazy"
+            onerror="if(!this.dataset.f){this.dataset.f='1';this.src='images/griplogo.svg';}else if(this.dataset.f==='1'){this.dataset.f='2';this.src='images/griplogo.webp';}else if(this.dataset.f==='2'){this.dataset.f='3';this.src='images/griplogo.jpg';}else if(this.dataset.f==='3'){this.dataset.f='4';this.src='images/griplogo.jpeg';}else{this.onerror=null;}"
+        >
+        <span class="tracking-tight">고객경험팀</span>
     </div>
 
     <script>
