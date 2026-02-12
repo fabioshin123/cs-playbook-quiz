@@ -85,7 +85,7 @@
 
         <div id="quiz-view" class="hidden p-5 md:p-8 flex flex-col h-full">
             <div class="flex justify-between items-center mb-4">
-                <button onclick="location.reload()" class="text-blue-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1">
+                <button onclick="exitToHome()" class="text-blue-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1">
                     <span class="bg-blue-500 text-white w-3.5 h-3.5 flex items-center justify-center rounded-sm text-[7px]">⬅</span> EXIT
                 </button>
                 <div id="theme-depth-1" class="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border bg-white">카테고리</div>
@@ -671,6 +671,7 @@ const quizData = [
 ];
 
 
+        const PROGRESS_KEY = 'CS_MASTER_PROGRESS_V6';
         let currentMode = 1, sIdx = 0, qIdx = 0, testSet = [];
         const allQs = quizData.flatMap(s => s.questions.map(q => ({...q, sub: s.subject, desc: s.desc, cat: s.cat, imgTag: s.imgTag})));
 
@@ -679,6 +680,47 @@ const quizData = [
             if(savedNick) document.getElementById('user-nickname').value = savedNick;
             loadMasterData();
         };
+
+        function saveProgress() {
+            try {
+                const payload = {
+                    v: 1,
+                    t: Date.now(),
+                    mode: currentMode,
+                    sIdx,
+                    qIdx,
+                    testSet: currentMode === 2 ? testSet : null
+                };
+                localStorage.setItem(PROGRESS_KEY, JSON.stringify(payload));
+            } catch (e) {
+                console.warn('progress save failed', e);
+            }
+        }
+
+        function loadProgress() {
+            try {
+                const raw = localStorage.getItem(PROGRESS_KEY);
+                if (!raw) return null;
+                const p = JSON.parse(raw);
+                if (!p || typeof p !== 'object') return null;
+                return p;
+            } catch {
+                return null;
+            }
+        }
+
+        function clearProgress() {
+            localStorage.removeItem(PROGRESS_KEY);
+        }
+
+        function exitToHome() {
+            // 현재 진행상태 저장 후 홈으로 (리로드 X)
+            saveProgress();
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.add('hidden');
+            document.getElementById('setup-view').classList.remove('hidden');
+            document.getElementById('progress-container').classList.add('hidden');
+        }
 
         function parseCSVLine(line) {
             const out = []; let cur = '', inQ = false;
@@ -777,25 +819,43 @@ const quizData = [
                 if (document.getElementById('step2-btn').dataset.quotaFull === 'true') return;
             }
             localStorage.setItem('CS_MASTER_USER_NICK_V6', nick);
-            currentMode = step;
+            // 나갔다가 들어올 때 이어서 하기
+            const p = loadProgress();
+            if (p && p.mode === step) {
+                currentMode = p.mode;
+                sIdx = typeof p.sIdx === 'number' ? p.sIdx : 0;
+                qIdx = typeof p.qIdx === 'number' ? p.qIdx : 0;
+                testSet = Array.isArray(p.testSet) ? p.testSet : [];
+            } else {
+                currentMode = step;
+            }
             document.getElementById('setup-view').classList.add('hidden');
             document.getElementById('quiz-view').classList.remove('hidden');
             document.getElementById('progress-container').classList.remove('hidden');
-            if(step === 1) { sIdx = 0; qIdx = 0; loadLearning(); }
+            if(step === 1) {
+                if (!p || p.mode !== 1) { sIdx = 0; qIdx = 0; }
+                loadLearning();
+                saveProgress();
+            }
             else { 
                 if (!allQs || allQs.length === 0) {
                     console.error('allQs가 비어있습니다.');
                     alert('퀴즈 데이터를 불러올 수 없습니다.');
                     return;
                 }
-                sIdx = 0; 
-                testSet = allQs.sort(() => 0.5 - Math.random()).slice(0, 10); 
+                if (!p || p.mode !== 2 || !Array.isArray(p.testSet) || p.testSet.length !== 10) {
+                    sIdx = 0; 
+                    // allQs는 고정 배열이므로 복사본을 섞어서 테스트 세트 생성
+                    const pool = [...allQs];
+                    testSet = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
+                }
                 if (!testSet || testSet.length === 0) {
                     console.error('testSet이 비어있습니다.');
                     alert('테스트 세트를 생성할 수 없습니다.');
                     return;
                 }
                 loadTest(); 
+                saveProgress();
             }
         }
 
@@ -876,6 +936,7 @@ const quizData = [
                 // 정답 시 단골만들기 팁 + 다음 스텝 버튼이 보이도록 스크롤을 맨 아래로
                 const scrollEl = document.querySelector('#quiz-view .flex-1.overflow-y-auto');
                 requestAnimationFrame(() => { if(scrollEl) scrollEl.scrollTo({ top: scrollEl.scrollHeight, behavior: 'smooth' }); });
+                saveProgress();
             } else {
                 showEffect('X', 'wrong-effect');
                 if(currentMode === 2) { alert("테스트 실패! 만점만 통과 가능합니다."); location.reload(); }
@@ -887,11 +948,12 @@ const quizData = [
             if(currentMode === 1) {
                 qIdx++; if(qIdx > 2) { qIdx = 0; sIdx++; }
                 if(sIdx < 14) loadLearning();
-                else { localStorage.setItem('CS_MASTER_STEP1_COMPLETE_V6', 'true'); showStep1Clear(); }
+                else { localStorage.setItem('CS_MASTER_STEP1_COMPLETE_V6', 'true'); clearProgress(); showStep1Clear(); }
             } else {
                 sIdx++; if(sIdx < 10) loadTest();
-                else showFinal();
+                else { clearProgress(); showFinal(); }
             }
+            saveProgress();
         }
 
         function showStep1Clear() {
