@@ -782,16 +782,43 @@ const quizData = [
             document.getElementById('quiz-view').classList.remove('hidden');
             document.getElementById('progress-container').classList.remove('hidden');
             if(step === 1) { sIdx = 0; qIdx = 0; loadLearning(); }
-            else { sIdx = 0; testSet = allQs.sort(() => 0.5 - Math.random()).slice(0, 10); loadTest(); }
+            else { 
+                if (!allQs || allQs.length === 0) {
+                    console.error('allQs가 비어있습니다.');
+                    alert('퀴즈 데이터를 불러올 수 없습니다.');
+                    return;
+                }
+                sIdx = 0; 
+                testSet = allQs.sort(() => 0.5 - Math.random()).slice(0, 10); 
+                if (!testSet || testSet.length === 0) {
+                    console.error('testSet이 비어있습니다.');
+                    alert('테스트 세트를 생성할 수 없습니다.');
+                    return;
+                }
+                loadTest(); 
+            }
         }
 
         function loadLearning() {
-            const s = quizData[sIdx], q = s.questions[qIdx];
+            if (sIdx >= quizData.length || !quizData[sIdx]) {
+                console.error('퀴즈 데이터를 찾을 수 없습니다. sIdx:', sIdx);
+                return;
+            }
+            const s = quizData[sIdx];
+            if (qIdx >= s.questions.length || !s.questions[qIdx]) {
+                console.error('문제를 찾을 수 없습니다. sIdx:', sIdx, 'qIdx:', qIdx);
+                return;
+            }
+            const q = s.questions[qIdx];
             updateProgressBar((sIdx * 3) + qIdx, 42);
             renderUI(s.cat, s.subject, s.desc, q.q, q.a, s.imgTag);
         }
 
         function loadTest() {
+            if (!testSet || sIdx >= testSet.length || !testSet[sIdx]) {
+                console.error('테스트 세트를 찾을 수 없습니다. sIdx:', sIdx, 'testSet:', testSet);
+                return;
+            }
             const q = testSet[sIdx];
             updateProgressBar(sIdx, 10);
             renderUI(q.cat, "Final Test", q.desc, q.q, q.a, q.imgTag);
@@ -816,6 +843,10 @@ const quizData = [
             document.getElementById('feedback-area').classList.add('hidden');
             const container = document.getElementById('options-container');
             container.innerHTML = '';
+            if (!opts || !Array.isArray(opts)) {
+                console.error('옵션이 배열이 아닙니다:', opts);
+                return;
+            }
             opts.forEach((o, i) => {
                 container.innerHTML += `
                     <label class="block cursor-pointer">
@@ -826,11 +857,16 @@ const quizData = [
                         </div>
                     </label>`;
             });
-            document.querySelector('.flex-1.overflow-y-auto').scrollTo(0, 0);
+            const scrollEl = document.querySelector('#quiz-view .flex-1.overflow-y-auto');
+            if (scrollEl) scrollEl.scrollTo(0, 0);
         }
 
         function checkAnswer(i) {
             const q = currentMode === 1 ? quizData[sIdx].questions[qIdx] : testSet[sIdx];
+            if (!q) {
+                console.error('문제를 찾을 수 없습니다. sIdx:', sIdx, 'qIdx:', qIdx, 'currentMode:', currentMode);
+                return;
+            }
             if(i === q.c) {
                 showEffect('O', 'correct-effect');
                 document.getElementById('explanation-text').innerText = q.exp;
