@@ -85,9 +85,14 @@
 
         <div id="quiz-view" class="hidden p-5 md:p-8 flex flex-col h-full">
             <div class="flex justify-between items-center mb-4">
-                <button onclick="exitToHome()" class="text-blue-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1">
-                    <span class="bg-blue-500 text-white w-3.5 h-3.5 flex items-center justify-center rounded-sm text-[7px]">⬅</span> EXIT
-                </button>
+                <div class="flex items-center gap-3">
+                    <button id="quiz-prev-btn" onclick="goPrev()" class="text-slate-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed">
+                        <span class="bg-slate-500 text-white w-3.5 h-3.5 flex items-center justify-center rounded-sm text-[7px]">⬅</span> BACK
+                    </button>
+                    <button onclick="exitToHome()" class="text-blue-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1">
+                        <span class="bg-blue-500 text-white w-3.5 h-3.5 flex items-center justify-center rounded-sm text-[7px]">⬅</span> EXIT
+                    </button>
+                </div>
                 <div id="theme-depth-1" class="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border bg-white">카테고리</div>
                 <span id="quiz-progress-text" class="text-slate-300 text-[10px] font-black italic">0%</span>
             </div>
@@ -722,6 +727,38 @@ const quizData = [
             document.getElementById('progress-container').classList.add('hidden');
         }
 
+        function updatePrevButtonState() {
+            const btn = document.getElementById('quiz-prev-btn');
+            if (!btn) return;
+            const canPrev = (currentMode === 1)
+                ? (sIdx > 0 || qIdx > 0)
+                : (sIdx > 0);
+            btn.disabled = !canPrev;
+        }
+
+        function goPrev() {
+            if (currentMode === 1) {
+                if (qIdx > 0) {
+                    qIdx -= 1;
+                } else if (sIdx > 0) {
+                    sIdx -= 1;
+                    qIdx = 2; // 각 섹션은 3문항
+                } else {
+                    return;
+                }
+                loadLearning();
+            } else {
+                if (sIdx > 0) {
+                    sIdx -= 1;
+                    loadTest();
+                } else {
+                    return;
+                }
+            }
+            saveProgress();
+            updatePrevButtonState();
+        }
+
         function parseCSVLine(line) {
             const out = []; let cur = '', inQ = false;
             for (let i = 0; i < line.length; i++) {
@@ -836,6 +873,7 @@ const quizData = [
                 if (!p || p.mode !== 1) { sIdx = 0; qIdx = 0; }
                 loadLearning();
                 saveProgress();
+                updatePrevButtonState();
             }
             else { 
                 if (!allQs || allQs.length === 0) {
@@ -856,6 +894,7 @@ const quizData = [
                 }
                 loadTest(); 
                 saveProgress();
+                updatePrevButtonState();
             }
         }
 
@@ -919,6 +958,7 @@ const quizData = [
             });
             const scrollEl = document.querySelector('#quiz-view .flex-1.overflow-y-auto');
             if (scrollEl) scrollEl.scrollTo(0, 0);
+            updatePrevButtonState();
         }
 
         function checkAnswer(i) {
