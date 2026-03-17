@@ -45,6 +45,31 @@
 <body class="flex items-center justify-center min-h-screen p-2 text-slate-900">
     <div id="effect-layer" class="effect-overlay"></div>
 
+    <!-- Popup banner -->
+    <div id="cs-master-banner" class="hidden fixed inset-0 z-[9999]">
+        <div class="absolute inset-0 bg-black/60" onclick="dismissCsMasterBanner(false)"></div>
+        <div class="relative w-full h-full flex items-center justify-center p-4">
+            <div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                    <p class="font-black tracking-tight text-slate-800">CS 마스터 안내</p>
+                    <button class="text-slate-500 hover:text-slate-800 font-black text-xl leading-none" onclick="dismissCsMasterBanner(false)" aria-label="닫기">×</button>
+                </div>
+                <div class="p-5">
+                    <img src="images/CS%20MASTER_banner.png" alt="CS MASTER" class="w-full h-auto rounded-2xl bg-slate-50 border border-slate-100" />
+                    <div class="mt-4 flex items-center justify-between gap-3">
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-600 select-none">
+                            <input id="banner-hide-today" type="checkbox" class="accent-pink-600" />
+                            오늘 하루 보지 않기
+                        </label>
+                        <button class="px-4 py-2 rounded-2xl bg-pink-600 text-white font-black text-sm shadow hover:bg-pink-700 active:scale-95 transition" onclick="dismissCsMasterBanner(true)">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="quiz-app" class="bg-white w-full max-w-xl h-[95vh] max-h-[850px] rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 relative flex flex-col">
         
         <div id="progress-container" class="hidden absolute top-0 left-0 w-full h-1.5 bg-slate-100 z-10">
@@ -220,6 +245,35 @@
 
         const PARTICIPANT_LOGGED_KEY = 'CS_MASTER_PARTICIPANT_LOGGED_V6';
         const COMPLETED_LOGGED_KEY = 'CS_MASTER_COMPLETED_LOGGED_V6';
+        const BANNER_HIDE_UNTIL_KEY = 'CS_MASTER_BANNER_HIDE_UNTIL_V1';
+
+        function showCsMasterBannerIfNeeded() {
+            try {
+                const until = Number(localStorage.getItem(BANNER_HIDE_UNTIL_KEY) || '0');
+                if (until && Date.now() < until) return;
+                const el = document.getElementById('cs-master-banner');
+                if (el) el.classList.remove('hidden');
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        function dismissCsMasterBanner(fromButton) {
+            const el = document.getElementById('cs-master-banner');
+            if (el) el.classList.add('hidden');
+
+            // overlay click should just close (no persistence)
+            if (!fromButton) return;
+
+            const hideToday = !!document.getElementById('banner-hide-today')?.checked;
+            if (hideToday) {
+                const next = new Date();
+                next.setHours(24, 0, 0, 0); // next midnight
+                localStorage.setItem(BANNER_HIDE_UNTIL_KEY, String(next.getTime()));
+            } else {
+                localStorage.removeItem(BANNER_HIDE_UNTIL_KEY);
+            }
+        }
 
         // API(Google Apps Script) 전달 형식: { action: 'participant'|'completed'|'certified', nickname, timestamp (ISO) }
         // 백엔드에서 action별로 해당 시트에 행 추가: [닉네임, 날짜/시간]
@@ -830,6 +884,7 @@ const quizData = [
             if(savedNick) document.getElementById('user-nickname').value = savedNick;
             loadProgramStats();
             loadMasterData();
+            showCsMasterBannerIfNeeded();
         };
 
         function saveProgress() {
