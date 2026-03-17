@@ -79,7 +79,7 @@
                 </button>
                 <button id="step2-btn" onclick="startStep(2)" class="btn-locked group p-5 border-2 border-slate-100 rounded-[2rem] transition-all text-left">
                     <span id="step2-tag" class="inline-block px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full text-[9px] font-black tracking-widest uppercase mb-2">Step 02</span>
-                    <h4 id="step2-title" class="font-black text-lg text-slate-400 italic tracking-tighter">인증 테스트</h4>
+                    <h4 id="step2-title" class="font-black text-lg text-slate-400 italic tracking-tighter">마스터 인증 퀴즈</h4>
                 </button>
             </div>
             
@@ -87,6 +87,46 @@
                 <h3 class="font-black text-slate-400 mb-3 uppercase text-[10px] tracking-widest flex items-center gap-1">🏅 Master List</h3>
                 <div id="master-list" class="space-y-2 overflow-y-auto max-h-[140px] pr-1 text-sm custom-scrollbar">
                     <p class="text-center py-4 italic text-xs text-slate-300">데이터를 로딩 중...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="stage-select-view" class="hidden p-6 md:p-8 flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="backToSetupFromStage()" class="text-blue-500 text-[10px] font-black tracking-widest uppercase italic flex items-center gap-1">
+                    <span class="bg-blue-500 text-white w-3.5 h-3.5 flex items-center justify-center rounded-sm text-[7px]">⬅</span> 홈으로
+                </button>
+                <h2 class="text-lg font-black text-slate-800 italic">마스터 학습</h2>
+                <span class="w-14"></span>
+            </div>
+            <p class="text-slate-500 text-sm mb-6 text-center">과목별로 순서대로 완료하면 마스터 인증 퀴즈가 열립니다.</p>
+            <div class="space-y-4 flex-1">
+                <div id="stage-1-card" class="stage-card p-5 rounded-3xl border-2 border-slate-100 bg-white shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-600">1단계</span>
+                        <span id="stage-1-progress" class="text-xs font-bold text-slate-400">0/6</span>
+                    </div>
+                    <h3 class="font-black text-slate-800 text-lg mb-1">상품</h3>
+                    <p class="text-xs text-slate-500 mb-3">주문 내역 확인, 재입고/품절 여부</p>
+                    <button id="stage-1-btn" onclick="startLearningStage(1)" class="w-full py-3 rounded-2xl font-black text-sm bg-amber-500 text-white hover:bg-amber-600 transition">학습하기</button>
+                </div>
+                <div id="stage-2-card" class="stage-card p-5 rounded-3xl border-2 border-slate-100 bg-white shadow-sm opacity-60">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-600">2단계</span>
+                        <span id="stage-2-progress" class="text-xs font-bold text-slate-400">0/18</span>
+                    </div>
+                    <h3 class="font-black text-slate-800 text-lg mb-1">배송</h3>
+                    <p class="text-xs text-slate-500 mb-3">송장 조회, 배송 지연/누락, 오배송, 배송지 변경, 합배송</p>
+                    <button id="stage-2-btn" onclick="startLearningStage(2)" class="w-full py-3 rounded-2xl font-black text-sm bg-slate-300 text-slate-500 cursor-not-allowed" disabled>잠금</button>
+                </div>
+                <div id="stage-3-card" class="stage-card p-5 rounded-3xl border-2 border-slate-100 bg-white shadow-sm opacity-60">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-600">3단계</span>
+                        <span id="stage-3-progress" class="text-xs font-bold text-slate-400">0/18</span>
+                    </div>
+                    <h3 class="font-black text-slate-800 text-lg mb-1">반품·교환</h3>
+                    <p class="text-xs text-slate-500 mb-3">처리 지연/불가, 부분 환불, 교환 옵션, 귀책 기준, 환불 기간</p>
+                    <button id="stage-3-btn" onclick="startLearningStage(3)" class="w-full py-3 rounded-2xl font-black text-sm bg-slate-300 text-slate-500 cursor-not-allowed" disabled>잠금</button>
                 </div>
             </div>
         </div>
@@ -695,7 +735,13 @@ const quizData = [
 
 
         const PROGRESS_KEY = 'CS_MASTER_PROGRESS_V6';
-        let currentMode = 1, sIdx = 0, qIdx = 0, testSet = [];
+        const STAGE_KEYS = ['CS_MASTER_STAGE1_COMPLETE_V6', 'CS_MASTER_STAGE2_COMPLETE_V6', 'CS_MASTER_STAGE3_COMPLETE_V6'];
+        const STAGE_BOUNDS = [
+            { name: '상품', sStart: 0, sEnd: 1, total: 6 },
+            { name: '배송', sStart: 2, sEnd: 7, total: 18 },
+            { name: '반품·교환', sStart: 8, sEnd: 13, total: 18 }
+        ];
+        let currentMode = 1, currentLearningStage = 0, sIdx = 0, qIdx = 0, testSet = [];
         const allQs = quizData.flatMap(s => s.questions.map(q => ({...q, sub: s.subject, desc: s.desc, cat: s.cat, imgTag: s.imgTag})));
 
         window.onload = function() {
@@ -710,6 +756,7 @@ const quizData = [
                     v: 1,
                     t: Date.now(),
                     mode: currentMode,
+                    currentLearningStage: currentMode === 1 ? currentLearningStage : 0,
                     sIdx,
                     qIdx,
                     testSet: currentMode === 2 ? testSet : null
@@ -737,30 +784,93 @@ const quizData = [
         }
 
         function exitToHome() {
-            // 현재 진행상태 저장 후 홈으로 (리로드 X)
             saveProgress();
             document.getElementById('quiz-view').classList.add('hidden');
             document.getElementById('result-view').classList.add('hidden');
+            document.getElementById('stage-select-view').classList.add('hidden');
             document.getElementById('setup-view').classList.remove('hidden');
             document.getElementById('progress-container').classList.add('hidden');
+        }
+
+        function backToSetupFromStage() {
+            document.getElementById('stage-select-view').classList.add('hidden');
+            document.getElementById('setup-view').classList.remove('hidden');
+            if (localStorage.getItem('CS_MASTER_STEP1_COMPLETE_V6') === 'true') activateStep2UI();
+        }
+
+        function isStageComplete(stage) {
+            return localStorage.getItem(STAGE_KEYS[stage - 1]) === 'true';
+        }
+
+        function refreshStageSelectUI() {
+            const s1 = isStageComplete(1), s2 = isStageComplete(2), s3 = isStageComplete(3);
+            const card1 = document.getElementById('stage-1-card'), card2 = document.getElementById('stage-2-card'), card3 = document.getElementById('stage-3-card');
+            const btn1 = document.getElementById('stage-1-btn'), btn2 = document.getElementById('stage-2-btn'), btn3 = document.getElementById('stage-3-btn');
+            const prog1 = document.getElementById('stage-1-progress'), prog2 = document.getElementById('stage-2-progress'), prog3 = document.getElementById('stage-3-progress');
+
+            prog1.innerText = s1 ? '6/6 완료' : '0/6';
+            prog2.innerText = s2 ? '18/18 완료' : '0/18';
+            prog3.innerText = s3 ? '18/18 완료' : '0/18';
+
+            card1.classList.remove('opacity-60'); btn1.disabled = false; btn1.className = 'w-full py-3 rounded-2xl font-black text-sm bg-amber-500 text-white hover:bg-amber-600 transition';
+            btn1.innerText = s1 ? '완료' : '학습하기';
+            if (s1) btn1.disabled = true;
+
+            if (s1) { card2.classList.remove('opacity-60'); btn2.disabled = false; btn2.className = 'w-full py-3 rounded-2xl font-black text-sm bg-blue-500 text-white hover:bg-blue-600 transition'; btn2.innerText = s2 ? '완료' : '학습하기'; if (s2) btn2.disabled = true; }
+            else { card2.classList.add('opacity-60'); btn2.disabled = true; btn2.className = 'w-full py-3 rounded-2xl font-black text-sm bg-slate-300 text-slate-500 cursor-not-allowed'; btn2.innerText = '잠금'; }
+
+            if (s2) { card3.classList.remove('opacity-60'); btn3.disabled = false; btn3.className = 'w-full py-3 rounded-2xl font-black text-sm bg-emerald-500 text-white hover:bg-emerald-600 transition'; btn3.innerText = s3 ? '완료' : '학습하기'; if (s3) btn3.disabled = true; }
+            else { card3.classList.add('opacity-60'); btn3.disabled = true; btn3.className = 'w-full py-3 rounded-2xl font-black text-sm bg-slate-300 text-slate-500 cursor-not-allowed'; btn3.innerText = '잠금'; }
+        }
+
+        function startLearningStage(stage) {
+            if (stage > 1 && !isStageComplete(stage - 1)) return;
+            const b = STAGE_BOUNDS[stage - 1];
+            currentLearningStage = stage;
+            sIdx = b.sStart;
+            qIdx = 0;
+            document.getElementById('stage-select-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            document.getElementById('progress-container').classList.remove('hidden');
+            currentMode = 1;
+            loadLearning();
+            saveProgress();
+            updatePrevButtonState();
+            gaEvent('quiz_start', { mode: 1, stage: stage });
+        }
+
+        function showStageComplete(stage) {
+            localStorage.setItem(STAGE_KEYS[stage - 1], 'true');
+            gaEvent('quiz_complete', { score: STAGE_BOUNDS[stage - 1].total, total: STAGE_BOUNDS[stage - 1].total, mode: 1, stage: stage });
+            confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
+            const stageName = STAGE_BOUNDS[stage - 1].name;
+            if (stage === 3) localStorage.setItem('CS_MASTER_STEP1_COMPLETE_V6', 'true');
+            setTimeout(() => {
+                alert(stageName + ' 단계 완료!');
+                document.getElementById('quiz-view').classList.add('hidden');
+                document.getElementById('progress-container').classList.add('hidden');
+                document.getElementById('stage-select-view').classList.remove('hidden');
+                refreshStageSelectUI();
+                if (stage === 3) alert('🎉 3단계 모두 완료! 이제 마스터 인증 퀴즈를 풀 수 있습니다.');
+            }, 400);
         }
 
         function updatePrevButtonState() {
             const btn = document.getElementById('quiz-prev-btn');
             if (!btn) return;
-            const canPrev = (currentMode === 1)
-                ? (sIdx > 0 || qIdx > 0)
-                : (sIdx > 0);
+            const minSIdx = (currentMode === 1 && currentLearningStage >= 1) ? STAGE_BOUNDS[currentLearningStage - 1].sStart : 0;
+            const canPrev = (currentMode === 1) ? (sIdx > minSIdx || qIdx > 0) : (sIdx > 0);
             btn.disabled = !canPrev;
         }
 
         function goPrev() {
             if (currentMode === 1) {
+                const minSIdx = currentLearningStage >= 1 ? STAGE_BOUNDS[currentLearningStage - 1].sStart : 0;
                 if (qIdx > 0) {
                     qIdx -= 1;
-                } else if (sIdx > 0) {
+                } else if (sIdx > minSIdx) {
                     sIdx -= 1;
-                    qIdx = 2; // 각 섹션은 3문항
+                    qIdx = 2;
                 } else {
                     return;
                 }
@@ -846,7 +956,7 @@ const quizData = [
             btn2.classList.remove('btn-active-glow');
             btn2.dataset.quotaFull = 'true';
             const titleEl = document.getElementById('step2-title');
-            titleEl.innerText = '인증 테스트 (정원 마감)';
+            titleEl.innerText = '마스터 인증 퀴즈 (정원 마감)';
             titleEl.className = 'font-black text-lg text-slate-400 italic tracking-tighter';
             document.getElementById('step2-tag').classList.add('bg-slate-200', 'text-slate-500');
             document.getElementById('step2-tag').classList.remove('bg-pink-600', 'text-white');
@@ -858,7 +968,7 @@ const quizData = [
             btn2.classList.add('btn-active-glow');
             delete btn2.dataset.quotaFull;
             const titleEl = document.getElementById('step2-title');
-            titleEl.innerText = '인증 테스트';
+            titleEl.innerText = '마스터 인증 퀴즈';
             titleEl.classList.replace('text-slate-400', 'text-slate-800');
             document.getElementById('step2-tag').classList.replace('bg-slate-200', 'bg-pink-600');
             document.getElementById('step2-tag').classList.replace('text-slate-500', 'text-white');
@@ -875,47 +985,36 @@ const quizData = [
                 if (document.getElementById('step2-btn').dataset.quotaFull === 'true') return;
             }
             localStorage.setItem('CS_MASTER_USER_NICK_V6', nick);
-            // 나갔다가 들어올 때 이어서 하기
+            if (step === 1) {
+                document.getElementById('setup-view').classList.add('hidden');
+                document.getElementById('stage-select-view').classList.remove('hidden');
+                refreshStageSelectUI();
+                return;
+            }
+            currentMode = 2;
             const p = loadProgress();
-            if (p && p.mode === step) {
-                currentMode = p.mode;
+            if (p && p.mode === 2 && Array.isArray(p.testSet) && p.testSet.length === 10) {
                 sIdx = typeof p.sIdx === 'number' ? p.sIdx : 0;
                 qIdx = typeof p.qIdx === 'number' ? p.qIdx : 0;
-                testSet = Array.isArray(p.testSet) ? p.testSet : [];
+                testSet = p.testSet;
             } else {
-                currentMode = step;
+                sIdx = 0;
+                const pool = [...allQs];
+                testSet = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
             }
             document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('stage-select-view').classList.add('hidden');
             document.getElementById('quiz-view').classList.remove('hidden');
             document.getElementById('progress-container').classList.remove('hidden');
-            if(step === 1) {
-                if (!p || p.mode !== 1) { sIdx = 0; qIdx = 0; }
-                loadLearning();
-                saveProgress();
-                updatePrevButtonState();
+            if (!testSet || testSet.length === 0) {
+                console.error('testSet이 비어있습니다.');
+                alert('퀴즈 데이터를 불러올 수 없습니다.');
+                return;
             }
-            else { 
-                if (!allQs || allQs.length === 0) {
-                    console.error('allQs가 비어있습니다.');
-                    alert('퀴즈 데이터를 불러올 수 없습니다.');
-                    return;
-                }
-                if (!p || p.mode !== 2 || !Array.isArray(p.testSet) || p.testSet.length !== 10) {
-                    sIdx = 0; 
-                    // allQs는 고정 배열이므로 복사본을 섞어서 테스트 세트 생성
-                    const pool = [...allQs];
-                    testSet = pool.sort(() => 0.5 - Math.random()).slice(0, 10);
-                }
-                if (!testSet || testSet.length === 0) {
-                    console.error('testSet이 비어있습니다.');
-                    alert('테스트 세트를 생성할 수 없습니다.');
-                    return;
-                }
-                loadTest(); 
-                saveProgress();
-                updatePrevButtonState();
-            }
-            gaEvent('quiz_start', { mode: step });
+            loadTest();
+            saveProgress();
+            updatePrevButtonState();
+            gaEvent('quiz_start', { mode: 2 });
         }
 
         function loadLearning() {
@@ -929,9 +1028,16 @@ const quizData = [
                 return;
             }
             const q = s.questions[qIdx];
-            updateProgressBar((sIdx * 3) + qIdx, 42);
+            if (currentLearningStage >= 1) {
+                const b = STAGE_BOUNDS[currentLearningStage - 1];
+                const cur = (sIdx - b.sStart) * 3 + qIdx;
+                updateProgressBar(cur, b.total);
+                gaPageView('/quiz/learning/stage' + currentLearningStage + '-' + (cur + 1));
+            } else {
+                updateProgressBar((sIdx * 3) + qIdx, 42);
+                gaPageView('/quiz/learning/' + ((sIdx * 3) + qIdx + 1));
+            }
             renderUI(s.cat, s.subject, s.desc, q.q, q.a, s.imgTag);
-            gaPageView('/quiz/learning/' + ((sIdx * 3) + qIdx + 1));
         }
 
         function loadTest() {
@@ -941,7 +1047,7 @@ const quizData = [
             }
             const q = testSet[sIdx];
             updateProgressBar(sIdx, 10);
-            renderUI(q.cat, "Final Test", q.desc, q.q, q.a, q.imgTag);
+            renderUI(q.cat, "마스터 인증 퀴즈", q.desc, q.q, q.a, q.imgTag);
             gaPageView('/quiz/final/' + (sIdx + 1));
         }
 
@@ -1013,8 +1119,12 @@ const quizData = [
         function handleNext() {
             if(currentMode === 1) {
                 qIdx++; if(qIdx > 2) { qIdx = 0; sIdx++; }
-                if(sIdx < 14) loadLearning();
-                else { localStorage.setItem('CS_MASTER_STEP1_COMPLETE_V6', 'true'); clearProgress(); showStep1Clear(); }
+                const b = STAGE_BOUNDS[currentLearningStage - 1];
+                if(sIdx > b.sEnd) {
+                    showStageComplete(currentLearningStage);
+                    return;
+                }
+                loadLearning();
             } else {
                 sIdx++; if(sIdx < 10) loadTest();
                 else { clearProgress(); showFinal(); }
