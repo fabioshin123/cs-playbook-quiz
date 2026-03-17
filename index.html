@@ -55,7 +55,7 @@
                     <button class="text-slate-500 hover:text-slate-800 font-black text-xl leading-none" onclick="dismissCsMasterBanner(false)" aria-label="닫기">×</button>
                 </div>
                 <div class="p-5">
-                    <img src="images/CS%20MASTER_banner.png" alt="CS MASTER" class="w-full h-auto rounded-2xl bg-slate-50 border border-slate-100" />
+                    <img id="cs-master-banner-img" src="images/CS%20MASTER_banner.png" alt="CS MASTER" class="w-full h-auto rounded-2xl bg-slate-50 border border-slate-100" />
                     <div class="mt-4 flex items-center justify-between gap-3">
                         <label class="flex items-center gap-2 text-xs font-bold text-slate-600 select-none">
                             <input id="banner-hide-today" type="checkbox" class="accent-pink-600" />
@@ -246,6 +246,27 @@
         const PARTICIPANT_LOGGED_KEY = 'CS_MASTER_PARTICIPANT_LOGGED_V6';
         const COMPLETED_LOGGED_KEY = 'CS_MASTER_COMPLETED_LOGGED_V6';
         const BANNER_HIDE_UNTIL_KEY = 'CS_MASTER_BANNER_HIDE_UNTIL_V1';
+        const BANNER_IMAGE_CANDIDATES = [
+            'images/CS%20MASTER_banner.png',
+            'images/CS MASTER_banner.png',
+            'images/CS_MASTER_banner.png',
+            'images/CS-MASTER_banner.png',
+            'images/cs_master_banner.png'
+        ];
+
+        function ensureBannerImageSrc() {
+            const img = document.getElementById('cs-master-banner-img');
+            if (!img) return;
+
+            let idx = 0;
+            const tryNext = () => {
+                if (idx >= BANNER_IMAGE_CANDIDATES.length) return;
+                img.src = BANNER_IMAGE_CANDIDATES[idx++];
+            };
+            img.onerror = () => tryNext();
+            // 첫 후보가 이미 src에 들어있을 수 있어도, 확실히 재시도 체인을 붙이기 위해 실행
+            tryNext();
+        }
 
         function showCsMasterBannerIfNeeded() {
             try {
@@ -884,6 +905,7 @@ const quizData = [
             if(savedNick) document.getElementById('user-nickname').value = savedNick;
             loadProgramStats();
             loadMasterData();
+            ensureBannerImageSrc();
             showCsMasterBannerIfNeeded();
         };
 
