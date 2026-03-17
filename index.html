@@ -190,14 +190,20 @@
 
     <script>
         const CONFIG = {
-            // 마스터 리스트: 구글 시트 '웹에 게시' → CSV 링크. 2번째 열(B열)이 닉네임. CORS 때문에 직접 요청이 막히면 프록시 사용.
-            CSV_URL: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSTBUxAlCgto9_mwKuJcdg3DU8xNvbQGyH_-tqXS_nZbjQq8s1c-R4AzEgcvUpJr7Wwt_U3ME3rk6k2/pub?gid=0&single=true&output=csv',
+            // 구글 스프레드시트 '웹에 게시' → CSV 링크들
+            // 한 스프레드시트 안에 시트 3개를 두고, 각 시트(gid)는 아래 URL에 맞게 교체해서 사용하면 됩니다.
+            // - PARTICIPANT_CSV_URL: 최초 학습 시작 시 닉네임/날짜가 기록되는 시트
+            // - COMPLETED_CSV_URL  : 3단계 학습 완료 시 닉네임/날짜가 기록되는 시트
+            // - CERT_CSV_URL       : 마스터 인증(인증자) 시 닉네임/날짜가 기록되는 시트
+            PARTICIPANT_CSV_URL: 'https://docs.google.com/spreadsheets/d/1WI5UKhfrXYKfVqupVrR3VVN9VAAqdzHpaNSy4auJlwA/export?format=csv&gid=710245617',
+            COMPLETED_CSV_URL  : 'https://docs.google.com/spreadsheets/d/1WI5UKhfrXYKfVqupVrR3VVN9VAAqdzHpaNSy4auJlwA/export?format=csv&gid=2038038928',
+            CERT_CSV_URL       : 'https://docs.google.com/spreadsheets/d/1WI5UKhfrXYKfVqupVrR3VVN9VAAqdzHpaNSy4auJlwA/export?format=csv&gid=1217491808', // 인증자 마스터 리스트
             CORS_PROXY: 'https://api.allorigins.win/raw?url=',  // 구글 시트 CSV가 CORS 미지원이라 실패 시 사용
-            API_URL: 'https://script.google.com/macros/s/AKfycbyEv8g-2lI9bPqmjbeowI7ZzCVxNXMuZd18l6jnDh_fNaUn4fRJxlOmcpzyjftuxurzWA/exec', 
+            API_URL: 'https://script.google.com/macros/s/AKfycbwQMsLtVuVgOdn_PCgcb7fLh_a3CEJ4OR5WJm2BNVxXcZVOpxsOc2hCA1jyS1jshzGicQ/exec', 
             REVIEW_URL: 'https://forms.gle/EbwAbbV36ALXkiBb7'
         };
         const GA_ID = 'G-G3JEXZW9GW';
-        const PROGRAM_STATS = {
+        const PROGRAM_STATS_FALLBACK = {
             totalParticipants: 138,
             completedLearners: 92,
             certifiedUsers: 41
@@ -210,6 +216,28 @@
         }
         function gaPageView(pagePath) {
             if (typeof gtag === 'function') gtag('config', GA_ID, { page_path: pagePath });
+        }
+
+        const PARTICIPANT_LOGGED_KEY = 'CS_MASTER_PARTICIPANT_LOGGED_V6';
+        const COMPLETED_LOGGED_KEY = 'CS_MASTER_COMPLETED_LOGGED_V6';
+
+        // API(Google Apps Script) 전달 형식: { action: 'participant'|'completed'|'certified', nickname, timestamp (ISO) }
+        // 백엔드에서 action별로 해당 시트에 행 추가: [닉네임, 날짜/시간]
+        async function logToSheet(action, nickname) {
+            if (!nickname) return;
+            try {
+                await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action,
+                        nickname,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (e) {
+                console.warn('logToSheet failed', action, e);
+            }
         }
 
         const CATEGORY_COLORS = {
@@ -756,13 +784,51 @@ const quizData = [
         let currentMode = 1, currentLearningStage = 0, sIdx = 0, qIdx = 0, testSet = [];
         const allQs = quizData.flatMap(s => s.questions.map(q => ({...q, sub: s.subject, desc: s.desc, cat: s.cat, imgTag: s.imgTag})));
 
+        async function loadProgramStats() {
+            // 3개 시트의 CSV를 불러와서 행 수 기준으로 카운팅
+            const urls = [
+                CONFIG.PARTICIPANT_CSV_URL,
+                CONFIG.COMPLETED_CSV_URL,
+                CONFIG.CERT_CSV_URL
+            ];
+            try {
+                const fetchCsv = async (url) => {
+                    const csvUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+                    try {
+                        const res = await fetch(csvUrl);
+                        if (!res.ok) throw new Error('direct failed');
+                        return await res.text();
+                    } catch {
+                        const res = await fetch(CONFIG.CORS_PROXY + encodeURIComponent(csvUrl));
+                        if (!res.ok) throw new Error('proxy failed');
+                        return await res.text();
+                    }
+                };
+
+                const [pCsv, cCsv, certCsv] = await Promise.all(urls.map(fetchCsv));
+                const countLines = (text) => {
+                    const lines = text.split(/\r?\n/).map(r => r.trim()).filter(r => r.length > 0);
+                    return Math.max(0, lines.length - 1); // 헤더 1줄 제외
+                };
+                const totalParticipants = countLines(pCsv);
+                const completedLearners = countLines(cCsv);
+                const certifiedUsers = countLines(certCsv);
+
+                document.getElementById('total-participants').innerText = totalParticipants;
+                document.getElementById('completed-learners').innerText = completedLearners;
+                document.getElementById('certified-users').innerText = certifiedUsers;
+            } catch (e) {
+                console.warn('loadProgramStats failed, use fallback', e);
+                document.getElementById('total-participants').innerText = PROGRAM_STATS_FALLBACK.totalParticipants;
+                document.getElementById('completed-learners').innerText = PROGRAM_STATS_FALLBACK.completedLearners;
+                document.getElementById('certified-users').innerText = PROGRAM_STATS_FALLBACK.certifiedUsers;
+            }
+        }
+
         window.onload = function() {
             const savedNick = localStorage.getItem('CS_MASTER_USER_NICK_V6');
             if(savedNick) document.getElementById('user-nickname').value = savedNick;
-            // 상단 누적 지표 표시 (현재는 하드코딩 예시 값)
-            document.getElementById('total-participants').innerText = PROGRAM_STATS.totalParticipants;
-            document.getElementById('completed-learners').innerText = PROGRAM_STATS.completedLearners;
-            document.getElementById('certified-users').innerText = PROGRAM_STATS.certifiedUsers;
+            loadProgramStats();
             loadMasterData();
         };
 
@@ -860,7 +926,16 @@ const quizData = [
             gaEvent('quiz_complete', { score: STAGE_BOUNDS[stage - 1].total, total: STAGE_BOUNDS[stage - 1].total, mode: 1, stage: stage });
             confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
             const stageName = STAGE_BOUNDS[stage - 1].name;
-            if (stage === 3) localStorage.setItem('CS_MASTER_STEP1_COMPLETE_V6', 'true');
+            if (stage === 3) {
+                localStorage.setItem('CS_MASTER_STEP1_COMPLETE_V6', 'true');
+                const nick = localStorage.getItem('CS_MASTER_USER_NICK_V6');
+                if (nick && !localStorage.getItem(COMPLETED_LOGGED_KEY)) {
+                    logToSheet('completed', nick).then(() => {
+                        localStorage.setItem(COMPLETED_LOGGED_KEY, 'true');
+                        loadProgramStats();
+                    });
+                }
+            }
             setTimeout(() => {
                 alert(stageName + ' 단계 완료!');
                 document.getElementById('quiz-view').classList.add('hidden');
@@ -917,7 +992,8 @@ const quizData = [
 
         async function loadMasterData() {
             const listEl = document.getElementById('master-list');
-            const csvUrl = CONFIG.CSV_URL + (CONFIG.CSV_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+            const baseUrl = CONFIG.CERT_CSV_URL;
+            const csvUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
             let data = null;
             try {
                 let res = await fetch(csvUrl);
@@ -1001,6 +1077,12 @@ const quizData = [
             }
             localStorage.setItem('CS_MASTER_USER_NICK_V6', nick);
             if (step === 1) {
+                if (!localStorage.getItem(PARTICIPANT_LOGGED_KEY)) {
+                    logToSheet('participant', nick).then(() => {
+                        localStorage.setItem(PARTICIPANT_LOGGED_KEY, 'true');
+                        loadProgramStats();
+                    });
+                }
                 document.getElementById('setup-view').classList.add('hidden');
                 document.getElementById('stage-select-view').classList.remove('hidden');
                 refreshStageSelectUI();
@@ -1181,7 +1263,12 @@ const quizData = [
             const btn = document.getElementById('submit-btn');
             btn.disabled = true; btn.innerText = "등록 중...";
             try {
-                await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ nickname: nick }) });
+                await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'certified', nickname: nick, timestamp: new Date().toISOString() })
+                });
+                await loadProgramStats();
                 alert("🎖️ CS 마스터 등록 성공! 리뷰 페이지로 이동합니다.");
                 window.location.href = CONFIG.REVIEW_URL;
             } catch(e) { alert("등록 실패. 다시 시도해 주세요."); btn.disabled = false; btn.innerText = "인증 등록 및 리뷰하기"; }
